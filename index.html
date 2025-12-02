@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>S Sport Plus - Pusula</title>
+<!-- CSS Dosyası -->
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" type="image/png" href="favicon.png">
 <!-- Font Awesome -->
@@ -200,17 +201,15 @@
             </div>
             
             <!-- Admin Kontrolleri -->
-            <div id="admin-quality-controls" style="display:none; gap:10px; align-items:center;">
-                <!-- YENİ: Grup Filtresi -->
-                <select id="group-select-filter" class="swal2-input" style="width: 150px; padding:5px; height: 35px; margin:0; font-size: 0.8rem;" onchange="filterAgentsByGroup()">
+            <div id="admin-quality-controls" style="display:none; gap:10px; align-items: center;">
+                <!-- Grup Filtresi -->
+                <select id="group-select-filter" class="swal2-input" style="width: 150px; height: 35px; margin:0; font-size:0.8rem; padding:0 5px;" onchange="filterAgentsByGroup()">
                     <option value="all">Tüm Gruplar</option>
                 </select>
-                
-                <!-- İsim Filtresi -->
-                <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 200px; padding:5px; height: 35px; margin:0; font-size: 0.8rem;">
-                    <option value="all">-- Tüm Temsilciler --</option>
+                <!-- Temsilci Seçimi -->
+                <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 180px; padding:0 5px; height: 35px; margin:0; font-size: 0.8rem;">
+                    <option value="all">-- Tüm Ekip --</option>
                 </select>
-
                 <button class="add-btn" style="background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;" onclick="logEvaluationPopup()"><i class="fas fa-plus"></i> Ekle</button>
                 <button class="admin-btn" style="background:var(--success); color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;" onclick="exportEvaluations()"><i class="fas fa-file-csv"></i> Rapor</button>
             </div>
@@ -254,12 +253,12 @@
                         <span><i class="fas fa-list-ul"></i> Değerlendirme Geçmişi</span>
                         <span style="font-size:0.8rem; color:#999;">(Detay için kayda tıklayın)</span>
                     </div>
-                    <div class="dash-list-content" id="evaluations-list-dashboard" style="overflow-y:auto; padding:0;">
+                    <div class="dash-list-content" id="evaluations-list-dashboard" style="overflow-y:auto; padding:10px; background:#fcfcfc;">
                         <div style="padding:20px; text-align:center; color:#ccc;">Veri bekleniyor...</div>
                     </div>
                 </div>
 
-                <!-- SAĞ: GRUP SIRALAMASI -->
+                <!-- SAĞ: Grup Sıralaması -->
                 <div class="dash-list-box">
                     <div class="dash-list-header">
                         <span><i class="fas fa-trophy" style="color:gold;"></i> Grup Sıralaması</span>
@@ -283,13 +282,12 @@
             </div>
         </div>
         
-        <!-- Gizli yedek liste -->
         <div id="evaluations-list" style="display:none;"></div>
-
     </div>
 </div>
 
 <div class="crafted-by-badge">Crafted by Doğuş Yalçınkaya</div>
+<!-- JS Dosyasını Çağır -->
 <script src="js/app.js"></script>
 <script>
     function toggleUserDropdown() {
