@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>S Sport Plus - Pusula</title>
-<!-- DÜZELTME: CSS dosyası 'css' klasöründen çağrılıyor -->
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="style.css">
 <link rel="icon" type="image/png" href="favicon.png">
 <!-- Font Awesome -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -13,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Crypto JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-<!-- Chart.js (YENİ: Dashboard Grafikleri İçin Eklendi) -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -99,7 +98,7 @@
                     <button class="filter-btn link-btn" onclick="openWizard()"><i class="fas fa-robot"></i> İade Asistanı</button>
                     <button class="filter-btn link-btn" onclick="openSales()"><i class="fas fa-headset"></i> TeleSatış</button>
                     <button class="filter-btn link-btn" onclick="openPenaltyGame()"><i class="fas fa-futbol"></i> Oyun</button>
-                    <!-- YENİ: Kalite Dashboard Butonu -->
+                    <!-- Kalite Butonu -->
                     <button class="filter-btn link-btn" onclick="openQualityArea()"><i class="fas fa-chart-pie"></i> Kalite</button>
                 </div>
             </div>
@@ -132,7 +131,7 @@
     </div>
 </div>
 
-<!-- WIZARD MODAL (İade Asistanı) -->
+<!-- WIZARD MODAL -->
 <div id="wizard-modal" class="modal-overlay">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModal('wizard-modal')">&times;</span>
@@ -158,7 +157,7 @@
     </div>
 </div>
 
-<!-- OYUN MODAL (PENALTY - ORİJİNAL VERİ KORUNDU) -->
+<!-- OYUN MODAL (PENALTY) -->
 <div id="penalty-modal" class="modal-overlay">
     <div class="modal-content" style="max-width: 650px; background: #1a1a1a; border: 1px solid #333; min-height:600px; display:flex; flex-direction:column;">
         <span class="close-modal" onclick="closeModal('penalty-modal')">&times;</span>
@@ -191,19 +190,19 @@
     </div>
 </div>
 
-<!-- YENİ KALİTE DASHBOARD MODALI -->
+<!-- KALİTE DASHBOARD MODALI -->
 <div id="quality-modal" class="modal-overlay">
     <div class="modal-content" style="max-width: 1000px; background: #f8f9fa;">
         <span class="close-modal" onclick="closeModal('quality-modal')">&times;</span>
         
-        <!-- Dashboard Header -->
+        <!-- Header -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
             <div>
                 <h2 style="margin:0; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Kalite Yönetim Paneli</h2>
                 <p style="margin:5px 0 0 0; font-size:0.85rem; color:#666;">Performans metrikleri ve değerlendirme takibi</p>
             </div>
             
-            <!-- Admin Kontrolleri (Varsa) -->
+            <!-- Admin Kontrolleri -->
             <div id="admin-quality-controls" style="display:none; gap:10px;">
                 <div style="font-weight:bold; display:flex; align-items:center; gap: 5px;">
                     <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 200px; padding:5px; height: 35px; margin:0; font-size: 0.8rem;"></select>
@@ -213,9 +212,9 @@
             </div>
         </div>
 
-        <!-- Dashboard KPI Kartları -->
+        <!-- Dashboard Kartları -->
         <div class="dash-grid-container">
-            <!-- Kart 1: Genel Puan -->
+            <!-- Puan Kartı -->
             <div class="dash-card" style="border-left: 4px solid var(--info);">
                 <div class="dash-card-icon" style="background: var(--info); color: var(--info);"><i class="fa-solid fa-star"></i></div>
                 <div class="dash-card-title">Ortalama Kalite Puanı</div>
@@ -226,7 +225,7 @@
                 </div>
             </div>
 
-            <!-- Kart 2: Toplam Adet -->
+            <!-- Adet Kartı -->
             <div class="dash-card" style="border-left: 4px solid var(--success);">
                 <div class="dash-card-icon" style="background: var(--success); color: var(--success);"><i class="fa-solid fa-headset"></i></div>
                 <div class="dash-card-title">Değerlendirilen Çağrı</div>
@@ -234,7 +233,7 @@
                 <div class="dash-card-sub"><span style="color:var(--success);">Aktif</span> performans kaydı</div>
             </div>
 
-            <!-- Kart 3: Hedef -->
+            <!-- Hedef Kartı -->
             <div class="dash-card" style="border-left: 4px solid var(--warning);">
                 <div class="dash-card-icon" style="background: var(--warning); color: var(--warning);"><i class="fa-solid fa-bullseye"></i></div>
                 <div class="dash-card-title">Hedef Tutma Oranı</div>
@@ -242,38 +241,35 @@
                 <div class="dash-card-sub">Hedef puan: 90+</div>
             </div>
 
-            <!-- Ana İçerik: Grafik ve Liste -->
+            <!-- Ana İçerik -->
             <div class="dash-main-area">
                 <!-- Grafik -->
                 <div class="dash-chart-box">
                     <canvas id="qualityChart"></canvas>
                 </div>
 
-                <!-- Son İşlemler Listesi -->
+                <!-- Liste (Artık Tam Liste) -->
                 <div class="dash-list-box">
                     <div class="dash-list-header">
-                        <span>Son Değerlendirmeler</span>
-                        <span style="font-size:0.7rem; color:#999;" id="list-subtitle">(Son 10 Kayıt)</span>
+                        <span>Değerlendirme Listesi</span>
+                        <span style="font-size:0.7rem; color:#999;" id="list-subtitle">(Detay için tıklayın)</span>
                     </div>
                     <div class="dash-list-content" id="evaluations-list-dashboard">
-                        <!-- JS ile dolacak -->
                         <div style="padding:20px; text-align:center; color:#ccc;">Veri bekleniyor...</div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Gizli yedek liste (eski yapıdan kalma, gerekirse açılabilir) -->
+        <!-- Gizli yedek liste (eski yapıdan kalma) -->
         <div id="evaluations-list" style="display:none;"></div>
 
     </div>
 </div>
 
 <div class="crafted-by-badge">Crafted by Doğuş Yalçınkaya</div>
-<!-- DÜZELTME: JS dosyası 'js' klasöründen çağrılıyor -->
-<script src="js/app.js"></script>
+<script src="app.js"></script>
 <script>
-    // Header Dropdown Kontrolü
     function toggleUserDropdown() {
         const dropdown = document.getElementById('userDropdown');
         const arrow = document.getElementById('user-menu-arrow');
