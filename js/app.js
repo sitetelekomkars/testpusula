@@ -811,19 +811,19 @@ function updateDashboardUI() {
     }
 
     // SAĞ TARAF: GRUP SIRALAMASI
-    let targetGroup = "";
+    let rankingTargetGroup = ""; // Renamed variable to avoid redeclaration error
     if(isAdminMode) {
         const sel = document.getElementById('agent-select-admin');
         const opt = sel.options[sel.selectedIndex];
-        if(opt) targetGroup = opt.getAttribute('data-group');
+        if(opt) rankingTargetGroup = opt.getAttribute('data-group');
     } else {
         const myData = allEvaluationsData.find(d => d.agent === currentUser || d.agentName === currentUser);
-        if(myData) targetGroup = myData.group; 
+        if(myData) rankingTargetGroup = myData.group; 
     }
     
-    document.getElementById('ranking-group-name').innerText = targetGroup ? `(${targetGroup})` : '';
+    document.getElementById('ranking-group-name').innerText = rankingTargetGroup ? `(${rankingTargetGroup})` : '';
 
-    if(!targetGroup) {
+    if(!rankingTargetGroup) {
         rankBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:#999;">Grup bilgisi yok.</td></tr>';
     } else {
         const groupData = allEvaluationsData.filter(item => {
@@ -835,7 +835,7 @@ function updateDashboardUI() {
                 const u = adminUserList.find(u => u.name === (item.agent || item.agentName));
                 if(u) itemGroup = u.group;
             }
-            return isMonth && itemGroup === targetGroup;
+            return isMonth && itemGroup === rankingTargetGroup;
         });
 
         let agentStats = {};
