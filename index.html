@@ -3,220 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>S Sport Plus - Pusula (Dashboard)</title>
-<!-- Mevcut İkon Setin -->
+<title>S Sport Plus - Pusula</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="favicon.png">
+<!-- Font Awesome -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<!-- Grafik Kütüphanesi (Chart.js) -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Crypto JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
-<style>
-/* --- MEVCUT STİLLERİN (Style.docx'ten alındı) --- */
-:root { 
-    --primary: #0e1b42; 
-    --secondary: #fabb00; 
-    --bg: #f4f6f8; 
-    --card-bg: #ffffff; 
-    --accent: #d32f2f; 
-    --success: #2e7d32; 
-    --info: #0288d1; 
-    --warning: #ed6c02; 
-    --sales: #10b981; 
-    --quiz: #8e24aa; 
-    --text-dark: #2c3e50;
-    --text-light: #95a5a6;
-}
-body { 
-    margin: 0; padding: 0; 
-    font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif; 
-    background-color: var(--bg); 
-    color: var(--text-dark);
-    user-select: none; 
-    overflow-x: hidden;
-}
-/* Login & Main Layout */
-#login-screen { 
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5000; 
-    display: flex; justify-content: center; align-items: center;
-    background: #0e1b42; 
-}
-.login-card {
-    background: #1c2438; padding: 25px 40px; border-radius: 12px; text-align: center;
-    width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.05);
-}
-.login-logo-img { width: 90px; height: auto; margin-bottom: 0px; filter: drop-shadow(0 0 10px rgba(250, 187, 0, 0.3)); }
-.login-input { width: 100%; padding: 12px; margin: 8px 0; background: #2c344a; color: #fff; border: 1px solid #3a4563; border-radius: 6px; text-align: center; outline: none; transition: 0.3s; }
-.login-input:focus { border-color: var(--secondary); background: #323c54; }
-.login-btn { width: 100%; padding: 12px; background: var(--secondary); border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 15px; color: #0e1b42; transition: 0.2s; }
-.login-btn:hover { background: #e0a800; }
-.loading-text { font-size: 0.8rem; color: #666; margin-top: 10px; display: none; }
-#maintenance-screen { display: none !important; }
-#main-app { display: none; }
-
-/* Header & Nav */
-.header { background: #0e1b42; color: white; padding: 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-.header-content-limit { width: 100%; max-width: 1600px; margin-right: auto; margin-left: 0; padding: 5px 25px 0px 10px; box-sizing: border-box; }
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0px; }
-.brand-area { display: flex; align-items: center; gap: 10px; }
-.brand-img { height: 65px; width: 65px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(250, 187, 0, 0.3)); }
-.brand-text .main-text { font-size: 1.0rem; font-weight: 700; color: #fff; }
-.brand-text .sub-text { font-size: 1.0rem; font-weight: 300; color: rgba(255,255,255,0.6); border-left: 1px solid rgba(255,255,255,0.3); padding-left: 8px; }
-.user-btn { background: transparent; border: none; color: #eee; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-.user-avatar { width: 26px; height: 26px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--secondary); }
-.dropdown-menu { display: none; position: absolute; right: 0; top: 110%; background-color: #1c2438; min-width: 180px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); border-radius: 6px; z-index: 2000; }
-.dropdown-menu.show { display: block; }
-.dropdown-item { display: flex; align-items: center; gap: 10px; padding: 12px 15px; color: #ddd; text-decoration: none; font-size: 0.85rem; transition: 0.2s; }
-.dropdown-item:hover { background-color: #2c344a; color: #fff; }
-
-/* Filter & Controls */
-.control-wrapper { display: flex; align-items: center; justify-content: flex-start; gap: 15px; flex-wrap: wrap; }
-.search-container { position: relative; width: 300px; }
-#searchInput { width: 100%; padding: 6px 15px 6px 35px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: white; box-sizing: border-box; }
-.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.5); }
-.filter-container { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
-.filter-btn { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.75); padding: 5px 10px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.75rem; white-space: nowrap; }
-.filter-btn:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
-.filter-btn.active { background-color: #fabb00 !important; color: #0e1b42 !important; font-weight: 700; }
-.divider { width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 4px; }
-
-/* Ticker */
-.news-ticker-box { background: #0a1532; border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 0 25px; height: 25px; display: flex; align-items: center; gap: 15px; cursor: pointer; overflow: hidden; }
-.ticker-label { font-size: 0.65rem; color: #fabb00; font-weight: 800; display: flex; align-items: center; gap: 6px; background: #0a1532; z-index: 5; height: 100%; padding-right: 15px; }
-.pulse-dot { width: 5px; height: 5px; background: var(--secondary); border-radius: 50%; animation: pulse 2s infinite; }
-.ticker-scroll-wrapper { flex-grow: 1; overflow: hidden; position: relative; height: 100%; display: flex; align-items: center; }
-.ticker-content { font-size: 0.7rem; color: rgba(255, 255, 255, 0.9); white-space: nowrap; position: absolute; left: 100%; animation: ticker-scroll 30s linear infinite; }
-@keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%) translateX(-200px); } }
-
-/* Cards Grid */
-.container { padding: 25px; max-width: 1600px; margin: 0 auto; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.card { background: var(--card-bg); border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #eaedf2; border-left: 4px solid var(--info); display: flex; flex-direction: column; transition: transform 0.2s; position: relative; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-.card.Teknik { border-left-color: var(--primary); }
-.card.İkna { border-left-color: var(--accent); } 
-.card.Kampanya { border-left-color: var(--success); }
-.card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
-.card-title { font-weight: 600; font-size: 1.05rem; color: #2c3e50; }
-.badge { font-size: 0.65rem; padding: 3px 6px; background: #f7f9fc; font-weight: 600; color: #7f8c8d; border: 1px solid #edf2f7; border-radius: 3px; }
-.card-content { font-size: 0.9rem; color: #555; margin-bottom: 15px; flex-grow: 1; cursor: pointer; }
-.script-box { background: #fffdf5; border: 1px solid #f9f1d8; padding: 10px; border-radius: 4px; font-style: italic; color: #666; margin-top: auto; font-size: 0.85rem; }
-.card-actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; }
-.btn-copy { background: #0e1b42; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-.new-badge { position: absolute; top: 12px; left: -4px; background: #2e7d32; color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 0 3px 3px 0; font-weight: bold; }
-.icon-wrapper { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; }
-.fav-icon { color: #dce0e6; cursor: pointer; transition: 0.2s; }
-.fav-icon.active { color: var(--secondary); }
-.edit-icon { color: var(--secondary); cursor: pointer; display: none; padding: 5px; background: white; border-radius: 50%; border:1px solid #eee; }
-body.editing .edit-icon { display: block !important; }
-
-/* Modals */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(14, 27, 66, 0.8); z-index: 5000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-.modal-content { background: white; width: 90%; max-width: 800px; border-radius: 8px; padding: 30px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-.close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #999; }
-
-/* --- YENİ DASHBOARD CSS (BURAYA EKLENDİ) --- */
-.dash-grid-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 20px;
-}
-.dash-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f0f0f0;
-    transition: transform 0.2s;
-    position: relative;
-    overflow: hidden;
-}
-.dash-card:hover { transform: translateY(-2px); }
-.dash-card-icon {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    opacity: 0.2;
-}
-.dash-card-title { font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.dash-card-value { font-size: 2.5rem; font-weight: 800; color: #0e1b42; margin-top: 5px; }
-.dash-card-sub { font-size: 0.8rem; color: #94a3b8; margin-top: 5px; }
-.dash-main-area {
-    grid-column: span 3;
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-}
-.dash-chart-box {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #f0f0f0;
-    height: 300px;
-}
-.dash-list-box {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #f0f0f0;
-    overflow: hidden;
-    height: 300px;
-    display: flex;
-    flex-direction: column;
-}
-.dash-list-header {
-    padding: 15px;
-    border-bottom: 1px solid #f0f0f0;
-    font-weight: bold;
-    color: #0e1b42;
-    background: #f8fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.dash-list-content {
-    overflow-y: auto;
-    flex-grow: 1;
-}
-.dash-list-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-}
-.dash-list-item:last-child { border-bottom: none; }
-.dash-score-badge {
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 0.8rem;
-}
-.score-green { background: #dcfce7; color: #166534; }
-.score-yellow { background: #fef9c3; color: #854d0e; }
-.score-red { background: #fee2e2; color: #991b1b; }
-
-/* Responsive Dashboard */
-@media (max-width: 900px) {
-    .dash-grid-container { grid-template-columns: 1fr; }
-    .dash-main-area { grid-template-columns: 1fr; display: flex; flex-direction: column; }
-    .dash-main-area > * { grid-column: span 1; }
-}
-
-</style>
+<!-- Chart.js (YENİ EKLENDİ - Dashboard Grafikleri İçin) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- GİRİŞ EKRANI -->
 <div id="login-screen">
     <div class="login-card">
         <img src="favicon.png" alt="Logo" class="login-logo-img" onerror="this.style.display='none'">
@@ -230,23 +31,22 @@ body.editing .edit-icon { display: block !important; }
     </div>
 </div>
 
-<!-- BAKIM -->
+<!-- BAKIM EKRANI -->
 <div id="maintenance-screen">
-    <div style="text-align:center; color:white;">
+    <div class="maintenance-content" style="text-align:center; color:white;">
         <span style="font-size: 4rem;">👨‍🏫</span>
         <h1>Sistem Mola Verdi!</h1>
         <p>Bakım çalışması sürüyor... 🚀</p>
     </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- ANA UYGULAMA -->
 <div id="main-app">
     <div class="header">
         <div class="header-content-limit">
             <div class="header-top">
                 <div class="brand-area">
-                    <!-- Placeholder Logo -->
-                    <div style="width:40px; height:40px; background:#fabb00; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#0e1b42;">S</div>
+                    <img src="favicon.png" alt="S Sport Logo" class="brand-img" onerror="this.src='https://via.placeholder.com/65x65?text=S'">
                     <div class="brand-text">
                         <span class="main-text">S Sport Plus</span>
                         <span class="sub-text">Temsilci Pusulası</span>
@@ -260,17 +60,26 @@ body.editing .edit-icon { display: block !important; }
                             <i class="fas fa-chevron-down" id="user-menu-arrow" style="font-size:0.7rem; opacity:0.5; transition:0.3s;"></i>
                         </button>
                         <div id="userDropdown" class="dropdown-menu">
-                            <div class="dropdown-header"><span style="font-size:0.8rem; color:#999;">Hesap İşlemleri</span></div>
-                            <a href="javascript:void(0)" class="dropdown-item" onclick="changePasswordPopup()"><i class="fas fa-key"></i> Şifre Değiştir</a>
-                            <a href="javascript:void(0)" class="dropdown-item" id="dropdownAddCard" style="display:none;" onclick="addNewCardPopup()"><i class="fas fa-plus" style="color:var(--success);"></i> İçerik Ekle</a>
-                            <a href="javascript:void(0)" class="dropdown-item" id="dropdownQuickEdit" style="display:none;" onclick="toggleEditMode()"><i class="fas fa-pen" style="color:var(--secondary);"></i> Düzenlemeyi Aç</a>
+                            <div class="dropdown-header">
+                                <span style="font-size:0.8rem; color:#999;">Hesap İşlemleri</span>
+                            </div>
+                            <a href="javascript:void(0)" class="dropdown-item" onclick="changePasswordPopup()">
+                                <i class="fas fa-key"></i> Şifre Değiştir
+                            </a>
+                            <a href="javascript:void(0)" class="dropdown-item" id="dropdownAddCard" style="display:none;" onclick="addNewCardPopup()">
+                                <i class="fas fa-plus" style="color:var(--success);"></i> İçerik Ekle
+                            </a>
+                            <a href="javascript:void(0)" class="dropdown-item" id="dropdownQuickEdit" style="display:none;" onclick="toggleEditMode()">
+                                <i class="fas fa-pen" style="color:var(--secondary);"></i> Düzenlemeyi Aç
+                            </a>
                             <div class="dropdown-divider"></div>
-                            <a href="javascript:void(0)" class="dropdown-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
+                            <a href="javascript:void(0)" class="dropdown-item logout" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-            
             <div class="control-wrapper">
                 <div class="search-container">
                     <i class="fas fa-search search-icon"></i>
@@ -284,13 +93,20 @@ body.editing .edit-icon { display: block !important; }
                     <button class="filter-btn" onclick="filterCategory(this, 'Kampanya')"><i class="fas fa-gift"></i> Kampanya</button>
                     <button class="filter-btn" onclick="filterCategory(this, 'Bilgi')"><i class="fas fa-info-circle"></i> Bilgi</button>
                     <div class="divider"></div>
+                    <a href="https://www.ssportplus.com/yayin-akisi/" target="_blank" class="filter-btn link-btn"><i class="fas fa-calendar-alt"></i> Yayın Akışı</a>
+                    <button class="filter-btn link-btn" onclick="openGuide()"><i class="fas fa-book"></i> Spor Rehberi</button>
+                    <button class="filter-btn link-btn" onclick="openWizard()"><i class="fas fa-robot"></i> İade Asistanı</button>
+                    <button class="filter-btn link-btn" onclick="openSales()"><i class="fas fa-headset"></i> TeleSatış</button>
+                    <button class="filter-btn link-btn" onclick="openPenaltyGame()"><i class="fas fa-futbol"></i> Oyun</button>
+                    <!-- Kalite Butonu -->
                     <button class="filter-btn link-btn" onclick="openQualityArea()"><i class="fas fa-chart-pie"></i> Kalite</button>
                 </div>
             </div>
         </div>
-        
         <div class="news-ticker-box" onclick="openNews()">
-            <div class="ticker-label"><span class="pulse-dot"></span> DUYURU</div>
+            <div class="ticker-label">
+                <span class="pulse-dot"></span> DUYURU
+            </div>
             <div class="ticker-scroll-wrapper">
                 <div id="ticker-content" class="ticker-content">Veriler yükleniyor...</div>
             </div>
@@ -315,32 +131,93 @@ body.editing .edit-icon { display: block !important; }
     </div>
 </div>
 
-<!-- KALİTE (DASHBOARD) MODAL - YENİLENDİ -->
+<!-- WIZARD MODAL -->
+<div id="wizard-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('wizard-modal')">&times;</span>
+        <div id="wizard-body"></div>
+    </div>
+</div>
+
+<!-- SPOR REHBERİ MODAL -->
+<div id="guide-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('guide-modal')">&times;</span>
+        <h2 style="text-align:center; color:var(--primary);">📖 Spor Terimleri & İçerik Rehberi</h2>
+        <div class="guide-grid" id="guide-grid"></div>
+    </div>
+</div>
+
+<!-- SATIŞ SCRIPTLERI MODAL -->
+<div id="sales-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('sales-modal')">&times;</span>
+        <h2 style="text-align:center; color:var(--sales);">📞 Satış Scriptleri</h2>
+        <div class="sales-grid" id="sales-grid"></div>
+    </div>
+</div>
+
+<!-- OYUN MODAL (PENALTY) -->
+<div id="penalty-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px; background: #1a1a1a; border: 1px solid #333; min-height:600px; display:flex; flex-direction:column;">
+        <span class="close-modal" onclick="closeModal('penalty-modal')">&times;</span>
+        <h2 style="text-align:center; color:#fabb00; margin-top:0;">⚽ S Sport Arena</h2>
+        <div id="penalty-lobby" style="text-align:center; padding:20px; flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <h3 style="color:white; margin-bottom:15px;">🏆 Liderlik Tablosu (Top 5)</h3>
+            <div id="leaderboard-loader" style="color:#aaa;">Yükleniyor...</div>
+            <table id="leaderboard-table" style="width:100%; color:#eee; border-collapse:collapse; margin-bottom:30px; display:none;">
+                <thead><tr style="border-bottom:1px solid #555; color:#fabb00;"><th style="padding:10px;">#</th><th style="padding:10px;">Temsilci</th><th style="padding:10px;">Maç</th><th style="padding:10px;">Ort.</th></tr></thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+            <button class="penalty-btn" style="width:200px; background:#2e7d32; color:white; border-color:#1b5e20;" onclick="startGameFromLobby()">MAÇA BAŞLA 🏃‍♂️⚽</button>
+        </div>
+        <div id="penalty-game-area" style="display:none;">
+            <div class="penalty-stats"><span>SKOR: <span id="p-score">0</span></span><span>TOP: <span id="p-balls">10</span></span></div>
+            <div class="penalty-field">
+                <div class="stadium-stands"></div><div class="grass-stripes"></div>
+                <div class="goal-container"><div class="goal-net"></div><div class="goal-top-bar"></div><div class="goal-post-left"></div><div class="goal-post-right"></div><div id="keeper-wrap" class="keeper-wrapper"><div class="player-figure"><div class="head"></div><div class="torso"></div><div class="arms"><div class="arm left"><div class="gloves"></div></div><div class="arm right"><div class="gloves"></div></div></div><div class="shorts"></div><div class="legs"><div class="leg left"></div><div class="leg right"></div></div></div><div class="keeper-shadow"></div></div></div>
+                <div class="goal-message" id="goal-msg">GOL!</div><div class="penalty-area"></div><div class="penalty-spot-mark"></div><div id="ball-wrap" class="ball-wrapper"><div class="football"></div><div class="ball-shadow"></div></div><div id="shooter-wrap" class="shooter-wrapper"><div class="player-figure"><div class="head"></div><div class="torso"></div><div class="arms"><div class="arm left"></div><div class="arm right"></div></div><div class="shorts"></div><div class="legs"><div class="leg left"><div class="sock"></div><div class="shoe"></div></div><div class="leg right"><div class="sock"></div><div class="shoe"></div></div></div></div></div>
+            </div>
+            <div style="margin-top:15px; color:#ddd; min-height:50px; font-weight:500; text-align:center; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px;" id="p-question-text">Soru yükleniyor...</div>
+            <div id="joker-container" style="display: flex; justify-content: space-around; margin: 15px 0;">
+                <button id="joker-call" class="joker-btn" onclick="useJoker('call')" title="Telefon Jokeri">📞 Telefon</button>
+                <button id="joker-half" class="joker-btn" onclick="useJoker('half')" title="Yarı Yarıya Joker">✂️ 50:50</button>
+                <button id="joker-double" class="joker-btn" onclick="useJoker('double')" title="Çift Cevap Hakkı">2️⃣ Çift Cevap</button>
+            </div>
+            <div class="penalty-options" id="p-options"></div>
+            <button id="p-restart-btn" class="restart-btn" style="display:none; width:100%; background:#fabb00; color:black; font-weight:bold;" onclick="showLobby()">LOBİYE DÖN 🏠</button>
+        </div>
+    </div>
+</div>
+
+<!-- YENİ KALİTE DASHBOARD MODALI -->
 <div id="quality-modal" class="modal-overlay">
     <div class="modal-content" style="max-width: 1000px; background: #f8f9fa;">
         <span class="close-modal" onclick="closeModal('quality-modal')">&times;</span>
         
-        <!-- Üst Başlık ve Filtreler -->
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <!-- Dashboard Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 20px;">
             <div>
-                <h2 style="margin:0; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Kalite Performans</h2>
-                <p style="margin:5px 0 0 0; font-size:0.8rem; color:#666;">Güncel dönem performans özeti</p>
+                <h2 style="margin:0; color:var(--primary);"><i class="fa-solid fa-chart-line"></i> Kalite Yönetim Paneli</h2>
+                <p style="margin:5px 0 0 0; font-size:0.85rem; color:#666;">Performans metrikleri ve değerlendirme takibi</p>
             </div>
             
-            <!-- Admin Kontrolleri (Varsa) -->
+            <!-- Admin Kontrolleri -->
             <div id="admin-quality-controls" style="display:none; gap:10px;">
-                <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 200px; padding:5px; height:35px; margin:0; font-size:0.8rem;"></select>
-                <button class="filter-btn active" onclick="logEvaluationPopup()"><i class="fas fa-plus"></i> Ekle</button>
-                <button class="filter-btn" style="background:var(--success); border-color:var(--success); color:white;" onclick="exportEvaluations()"><i class="fas fa-file-csv"></i> Rapor</button>
+                <div style="font-weight:bold; display:flex; align-items:center; gap: 5px;">
+                    <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 200px; padding:5px; height: 35px; margin:0; font-size: 0.8rem;"></select>
+                </div>
+                <button class="add-btn" style="background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;" onclick="logEvaluationPopup()"><i class="fas fa-plus"></i> Ekle</button>
+                <button class="admin-btn" style="background:var(--success); color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;" onclick="exportEvaluations()"><i class="fas fa-file-csv"></i> Rapor</button>
             </div>
         </div>
 
-        <!-- KPI Kartları -->
+        <!-- Dashboard KPI Kartları -->
         <div class="dash-grid-container">
-            <!-- Kart 1: Puan -->
+            <!-- Kart 1: Genel Puan -->
             <div class="dash-card" style="border-left: 4px solid var(--info);">
                 <div class="dash-card-icon" style="background: var(--info); color: var(--info);"><i class="fa-solid fa-star"></i></div>
-                <div class="dash-card-title">Genel Kalite Puanı</div>
+                <div class="dash-card-title">Ortalama Kalite Puanı</div>
                 <div class="dash-card-value" id="dash-total-score">--</div>
                 <div class="dash-card-sub">
                     <select id="month-select-filter" onchange="fetchEvaluationsForAgent()" style="border:none; background:transparent; font-size:0.8rem; font-weight:bold; color:#666; cursor:pointer;"></select>
@@ -348,7 +225,7 @@ body.editing .edit-icon { display: block !important; }
                 </div>
             </div>
 
-            <!-- Kart 2: Adet -->
+            <!-- Kart 2: Toplam Adet -->
             <div class="dash-card" style="border-left: 4px solid var(--success);">
                 <div class="dash-card-icon" style="background: var(--success); color: var(--success);"><i class="fa-solid fa-headset"></i></div>
                 <div class="dash-card-title">Değerlendirilen Çağrı</div>
@@ -356,10 +233,10 @@ body.editing .edit-icon { display: block !important; }
                 <div class="dash-card-sub"><span style="color:var(--success);">Aktif</span> performans kaydı</div>
             </div>
 
-            <!-- Kart 3: Hedef (Statik Örnek) -->
+            <!-- Kart 3: Hedef -->
             <div class="dash-card" style="border-left: 4px solid var(--warning);">
                 <div class="dash-card-icon" style="background: var(--warning); color: var(--warning);"><i class="fa-solid fa-bullseye"></i></div>
-                <div class="dash-card-title">Hedef Tutma</div>
+                <div class="dash-card-title">Hedef Tutma Oranı</div>
                 <div class="dash-card-value" id="dash-target-rate">--%</div>
                 <div class="dash-card-sub">Hedef puan: 90+</div>
             </div>
@@ -371,349 +248,26 @@ body.editing .edit-icon { display: block !important; }
                     <canvas id="qualityChart"></canvas>
                 </div>
 
-                <!-- Son İşlemler Listesi -->
+                <!-- Liste -->
                 <div class="dash-list-box">
                     <div class="dash-list-header">
                         <span>Son Değerlendirmeler</span>
-                        <span style="font-size:0.7rem; color:#999;" id="list-subtitle">Tüm liste için aşağı kaydırın</span>
+                        <span style="font-size:0.7rem; color:#999;" id="list-subtitle">(Son 10 Kayıt)</span>
                     </div>
                     <div class="dash-list-content" id="evaluations-list-dashboard">
-                        <!-- JS ile dolacak -->
                         <div style="padding:20px; text-align:center; color:#ccc;">Veri bekleniyor...</div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Klasik Liste (Gizli/Yedek olarak tutuyoruz veya aşağıya ekliyoruz) -->
+        <!-- Gizli yedek liste (eski yapıdan kalma) -->
         <div id="evaluations-list" style="display:none;"></div>
 
     </div>
 </div>
 
 <div class="crafted-by-badge">Crafted by Doğuş Yalçınkaya</div>
-
-<script>
-// --- GLOBAL DEĞİŞKENLER ---
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3kd04k2u9XdVDD1-vdbQQAsHNW6WLIn8bNYxTlVCL3U1a0WqZo6oPp9zfBWIpwJEinQ/exec";
-const BAKIM_MODU = false;
-let database = [], newsData = [], activeCards = [];
-let currentUser = "", isAdminMode = false, sessionTimeout;
-const MONTH_NAMES = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-let allEvaluationsData = [];
-let qualityChartInstance = null; // Grafik instance'ı
-
-document.addEventListener('DOMContentLoaded', () => {
-    checkSession();
-});
-
-// --- SESSION & LOGIN ---
-function checkSession() {
-    const savedUser = localStorage.getItem("sSportUser");
-    const savedToken = localStorage.getItem("sSportToken");
-    const savedRole = localStorage.getItem("sSportRole");
-    if (savedUser && savedToken) {
-        currentUser = savedUser;
-        document.getElementById("login-screen").style.display = "none";
-        document.getElementById("user-display").innerText = currentUser;
-        checkAdmin(savedRole);
-        startSessionTimer();
-        if (BAKIM_MODU) document.getElementById("maintenance-screen").style.display = "flex";
-        else {
-            document.getElementById("main-app").style.display = "block";
-            loadContentData();
-        }
-    }
-}
-function enterBas(e) { if (e.key === "Enter") girisYap(); }
-function girisYap() {
-    const uName = document.getElementById("usernameInput").value.trim();
-    const uPass = document.getElementById("passInput").value.trim();
-    if(!uName || !uPass) return;
-    document.getElementById("loading-msg").style.display = "block";
-    
-    // Şifre hashleme ve Fetch işlemi (Özetlendi)
-    const hashedPass = CryptoJS.SHA256(uPass).toString();
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "login", username: uName, password: hashedPass })
-    }).then(r=>r.json()).then(data => {
-        document.getElementById("loading-msg").style.display = "none";
-        if (data.result === "success") {
-            currentUser = data.username;
-            localStorage.setItem("sSportUser", currentUser);
-            localStorage.setItem("sSportToken", data.token);
-            localStorage.setItem("sSportRole", data.role);
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("user-display").innerText = currentUser;
-            checkAdmin(data.role);
-            startSessionTimer();
-            document.getElementById("main-app").style.display = "block";
-            loadContentData();
-        } else {
-            document.getElementById("error-msg").style.display = "block";
-        }
-    }).catch(e=>console.error(e));
-}
-function checkAdmin(role) {
-    isAdminMode = (role === "admin");
-    const addCardDropdown = document.getElementById('dropdownAddCard');
-    const quickEditDropdown = document.getElementById('dropdownQuickEdit');
-    if(isAdminMode) {
-        if(addCardDropdown) addCardDropdown.style.display = 'flex';
-        if(quickEditDropdown) quickEditDropdown.style.display = 'flex';
-    } else {
-        if(addCardDropdown) addCardDropdown.style.display = 'none';
-        if(quickEditDropdown) quickEditDropdown.style.display = 'none';
-    }
-}
-function logout() {
-    localStorage.removeItem("sSportUser"); localStorage.removeItem("sSportToken"); localStorage.removeItem("sSportRole");
-    location.reload();
-}
-function startSessionTimer() {
-    if (sessionTimeout) clearTimeout(sessionTimeout);
-    sessionTimeout = setTimeout(() => { alert("Oturum süresi doldu."); logout(); }, 3600000);
-}
-
-// --- DATA & UI ---
-function loadContentData() {
-    document.getElementById('loading').style.display = 'block';
-    fetch(SCRIPT_URL, {
-        method: 'POST', headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "fetchData" })
-    }).then(r=>r.json()).then(data => {
-        document.getElementById('loading').style.display = 'none';
-        if (data.result === "success") {
-            const rawData = data.data;
-            database = rawData.filter(i => ['card','bilgi','teknik','kampanya','ikna'].includes(i.Type.toLowerCase()));
-            newsData = rawData.filter(i => i.Type.toLowerCase() === 'news');
-            activeCards = database;
-            renderCards(database);
-            startTicker();
-        }
-    });
-}
-function renderCards(data) {
-    const container = document.getElementById('cardGrid');
-    container.innerHTML = '';
-    if (data.length === 0) { container.innerHTML = '<div style="color:#777;">Kayıt yok.</div>'; return; }
-    data.forEach(item => {
-        let html = `<div class="card ${item.Category}">
-            <div class="card-header"><h3 class="card-title">${item.Title}</h3><span class="badge">${item.Category}</span></div>
-            <div class="card-content" onclick="showCardDetail('${item.Title}', '${item.Text}')">
-                <div class="card-text-truncate">${item.Text}</div>
-            </div>
-            <div class="script-box">${item.Script || ''}</div>
-            <div class="card-actions">
-                ${item.Link ? `<a href="${item.Link}" target="_blank" class="btn-copy">Link</a>` : ''}
-                <button class="btn-copy" onclick="copyText('${item.Script}')">Kopyala</button>
-            </div>
-        </div>`;
-        container.innerHTML += html;
-    });
-}
-function filterCategory(btn, cat) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    let filtered = database;
-    if(cat !== 'all') filtered = filtered.filter(i => i.Category === cat);
-    renderCards(filtered);
-}
-function filterContent() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = database.filter(i => i.Title.toLowerCase().includes(search) || i.Text.toLowerCase().includes(search));
-    renderCards(filtered);
-}
-function showCardDetail(t, txt) { Swal.fire({ title: t, html: txt, width: '600px' }); }
-function copyText(t) { navigator.clipboard.writeText(t); Swal.fire({toast:true, position:'top-end', icon:'success', title:'Kopyalandı', showConfirmButton:false, timer:1500}); }
-
-// --- TICKER ---
-function startTicker() {
-    const t = document.getElementById('ticker-content');
-    const activeNews = newsData.filter(i => i.Status !== 'Pasif');
-    if(activeNews.length===0) { t.innerHTML = "Duyuru yok."; return; }
-    let txt = activeNews.map(i => `<span style="color:#fabb00;">[${i.Date ? i.Date.split('T')[0] : ''}]</span> ${i.Title}: ${i.Text}`).join(' &nbsp; • &nbsp; ');
-    t.innerHTML = txt + ' &nbsp; • &nbsp; ' + txt;
-}
-function openNews() {
-    const c = document.getElementById('news-container'); c.innerHTML = '';
-    newsData.forEach(i => {
-        c.innerHTML += `<div class="news-item" style="border-left:4px solid var(--primary); padding:10px; margin-bottom:10px; background:#f9f9f9;">
-            <strong>${i.Title}</strong><br><span style="font-size:0.9rem;">${i.Text}</span>
-        </div>`;
-    });
-    document.getElementById('news-modal').style.display = 'flex';
-}
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-function toggleUserDropdown() { document.getElementById('userDropdown').classList.toggle('show'); }
-
-// --- DASHBOARD & QUALITY LOGIC (YENİLENEN KISIM) ---
-function openQualityArea() {
-    document.getElementById('quality-modal').style.display = 'flex';
-    document.getElementById('admin-quality-controls').style.display = isAdminMode ? 'flex' : 'none';
-    
-    // Ay Filtresini Doldur
-    const selectEl = document.getElementById('month-select-filter');
-    selectEl.innerHTML = '';
-    const now = new Date();
-    for (let i = 0; i < 6; i++) {
-        let d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        let val = `${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-        let txt = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-        let opt = document.createElement('option'); opt.value = val; opt.textContent = txt;
-        selectEl.appendChild(opt);
-    }
-
-    // Admin Listesi (Varsa)
-    if (isAdminMode) {
-        fetch(SCRIPT_URL, {
-            method: 'POST', body: JSON.stringify({ action: "getUserList", username: currentUser })
-        }).then(r=>r.json()).then(data => {
-            if (data.result === "success") {
-                const sel = document.getElementById('agent-select-admin');
-                sel.innerHTML = `<option value="all">-- Tüm Ekip --</option>` + data.users.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
-            }
-        });
-    }
-
-    // İlk Veriyi Çek
-    fetchEvaluationsForAgent(isAdminMode ? 'all' : currentUser);
-}
-
-function fetchEvaluationsForAgent(forcedName) {
-    const dashboardList = document.getElementById('evaluations-list-dashboard');
-    dashboardList.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-circle-notch fa-spin"></i> Veriler analiz ediliyor...</div>';
-    
-    let target = forcedName || (isAdminMode ? document.getElementById('agent-select-admin').value : currentUser);
-    const selectedMonth = document.getElementById('month-select-filter').value;
-
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "fetchEvaluations", targetAgent: target, username: currentUser })
-    }).then(r=>r.json()).then(data => {
-        if (data.result === "success") {
-            allEvaluationsData = data.evaluations;
-            updateDashboardUI(allEvaluationsData, selectedMonth);
-        } else {
-            dashboardList.innerHTML = '<div style="color:red; text-align:center;">Veri hatası.</div>';
-        }
-    });
-}
-
-function updateDashboardUI(data, monthFilter) {
-    // 1. Veriyi Filtrele (Seçili Ay)
-    const filtered = data.filter(item => {
-        // item.date formatı "dd.mm.yyyy" varsayılıyor
-        if(!item.date) return false;
-        const parts = item.date.split('.'); // [dd, mm, yyyy]
-        if(parts.length < 3) return false;
-        const itemMonthKey = `${parts[1]}.${parts[2]}`;
-        return itemMonthKey === monthFilter;
-    });
-
-    // 2. İstatistikleri Hesapla
-    let totalScore = 0;
-    let count = filtered.length;
-    let scores = filtered.map(i => parseInt(i.score) || 0);
-    
-    if (count > 0) {
-        totalScore = scores.reduce((a, b) => a + b, 0);
-    }
-    
-    const average = count > 0 ? (totalScore / count).toFixed(1) : 0;
-    const targetRate = count > 0 ? ((scores.filter(s => s >= 90).length / count) * 100).toFixed(0) : 0;
-
-    // 3. Kartları Güncelle
-    document.getElementById('dash-total-score').innerText = average;
-    document.getElementById('dash-total-count').innerText = count;
-    document.getElementById('dash-target-rate').innerText = `%${targetRate}`;
-    
-    // Renklendirme
-    const scoreEl = document.getElementById('dash-total-score');
-    if(average >= 90) scoreEl.style.color = 'var(--success)';
-    else if(average >= 80) scoreEl.style.color = 'var(--warning)';
-    else scoreEl.style.color = 'var(--accent)';
-
-    // 4. Listeyi Doldur (Son 5 Kayıt)
-    const listEl = document.getElementById('evaluations-list-dashboard');
-    listEl.innerHTML = '';
-    
-    if (count === 0) {
-        listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Bu dönem için kayıt yok.</div>';
-    } else {
-        // En yeniden eskiye
-        const sorted = filtered.reverse().slice(0, 10); 
-        sorted.forEach(item => {
-            let badgeClass = item.score >= 90 ? 'score-green' : (item.score >= 70 ? 'score-yellow' : 'score-red');
-            let html = `
-                <div class="dash-list-item">
-                    <div>
-                        <div style="font-weight:bold; color:#333;">${item.callId || 'ID Yok'}</div>
-                        <div style="font-size:0.75rem; color:#999;">${item.date}</div>
-                    </div>
-                    <div>
-                        <span class="dash-score-badge ${badgeClass}">${item.score}</span>
-                    </div>
-                </div>`;
-            listEl.innerHTML += html;
-        });
-    }
-
-    // 5. Grafiği Çiz
-    drawChart(filtered);
-}
-
-function drawChart(data) {
-    const ctx = document.getElementById('qualityChart').getContext('2d');
-    
-    // Önceki grafiği temizle
-    if (qualityChartInstance) {
-        qualityChartInstance.destroy();
-    }
-
-    // Veriyi grafiğe hazırla (Tarihe göre sıralı skorlar)
-    // Data zaten tersten gelmişti (yeniden eskiye), grafik için eskinden yeniye çevirelim
-    const chartData = [...data].reverse();
-    const labels = chartData.map(d => d.date.split('.')[0] + '/' + d.date.split('.')[1]); // Sadece Gün/Ay
-    const points = chartData.map(d => d.score);
-
-    qualityChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Kalite Puanı',
-                data: points,
-                borderColor: '#3B82F6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#3B82F6',
-                pointBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                title: { display: true, text: 'Puan Trendi' }
-            },
-            scales: {
-                y: { min: 0, max: 100 }
-            }
-        }
-    });
-}
-
-// Placeholder fonksiyonlar (Hata vermemesi için)
-function toggleEditMode() {} 
-function addNewCardPopup() {}
-function changePasswordPopup() {}
-</script>
+<script src="app.js"></script>
 </body>
 </html>
