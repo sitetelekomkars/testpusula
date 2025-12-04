@@ -7,7 +7,7 @@ let firstAnswerIndex = -1;
 const VALID_CATEGORIES = ['Teknik', 'İkna', 'Kampanya', 'Bilgi'];
 // --- GLOBAL DEĞİŞKENLER ---
 let database = [], newsData = [], sportsData = [], salesScripts = [], quizQuestions = [];
-let techWizardData = {}; // YENİ: Teknik Sihirbaz Verisi
+let techWizardData = {}; // Teknik Sihirbaz Verisi
 let currentUser = "";
 let isAdminMode = false;    
 let isEditingActive = false;
@@ -2005,3 +2005,4 @@ function twResetWizard() {
     twState.history = [];
     twRenderStep();
 }
+"}
