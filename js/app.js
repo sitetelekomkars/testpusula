@@ -1,15 +1,10 @@
 const BAKIM_MODU = false;
 // Apps Script URL'si
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3kd04k2u9XdVDD1-vdbQQAsHNW6WLIn8bNYxTlVCL3U1a0WqZo6oPp9zfBWIpwJEinQ/exec";
-
-// --- OYUN DEĞİŞKENLERİ ---
 let jokers = { call: 1, half: 1, double: 1 };
 let doubleChanceUsed = false;
 let firstAnswerIndex = -1;
-
-// --- KATEGORİLER ---
 const VALID_CATEGORIES = ['Teknik', 'İkna', 'Kampanya', 'Bilgi'];
-
 // --- GLOBAL DEĞİŞKENLER ---
 let database = [], newsData = [], sportsData = [], salesScripts = [], quizQuestions = [];
 let currentUser = "";
@@ -21,270 +16,8 @@ let currentCategory = 'all';
 let adminUserList = [];
 let allEvaluationsData = [];
 let wizardStepsData = {};
-
-// --- YENİ: TEKNİK ASİSTAN GEÇMİŞ YÖNETİMİ ---
-let technicalHistory = []; 
-let currentTechnicalStepId = 'start';
-
 const MONTH_NAMES = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-
-// =========================================================
-// 0. BÖLÜM: TEKNİK ASİSTAN VERİSİ (KODA GÖMÜLÜ - SABİT)
-// =========================================================
-const TECHNICAL_STEPS = {
-    // --- BAŞLANGIÇ ---
-    "start": {
-        title: "Donma Sorunu Çözüm Merkezi",
-        text: "Üye hangi cihazda donma/takılma sorunu yaşıyor?",
-        options: [
-            { text: "TV (Smart TV / Box)", next: "check_broadcast_tv" },
-            { text: "Mobil (Telefon / Tablet)", next: "check_broadcast_mob" },
-            { text: "Bilgisayar (Web)", next: "check_broadcast_pc" }
-        ]
-    },
-
-    // --- TV AKIŞI ---
-    "check_broadcast_tv": {
-        title: "Yayın Kontrolü (TV)",
-        text: "Hangi yayında sorun yaşanıyor? Canlı yayında genel bir sorun var mı?",
-        script: "Tüm yayınlarımız yayın odamız tarafından takip edilmektedir. İlgili yayında genel bir sorun görünmüyor ancak birlikte kontrol edelim.",
-        options: [
-            { text: "Genel Sorun Var", next: "res_general_issue" },
-            { text: "Sorun Yok (Bireysel)", next: "tv_start" }
-        ]
-    },
-    "tv_start": {
-        title: "TV Markası",
-        text: "Hangi marka TV veya cihaz kullanılıyor?",
-        options: [
-            { text: "Samsung / LG", next: "tv_os" },
-            { text: "Android TV / Mi Box", next: "tv_os" },
-            { text: "Apple TV", next: "tv_os" },
-            { text: "Diğer (Vestel/Arçelik vb.)", next: "tv_other" }
-        ]
-    },
-    "tv_other": {
-        title: "Cihaz Desteği",
-        text: "Kullanıcının cihazının uygulama mağazasında S Sport Plus var mı?",
-        options: [
-            { text: "Uygulama Var", next: "tv_os" },
-            { text: "Uygulama Yok", next: "res_unsupported" }
-        ]
-    },
-    "tv_os": {
-        title: "Yazılım Güncelliği",
-        text: "TV yazılımı ve S Sport Plus uygulaması güncel mi?",
-        script: "TV ayarlarından sistem güncellemelerini ve mağazadan uygulama güncelliğini kontrol edebilir misiniz?",
-        options: [
-            { text: "Her Şey Güncel", next: "tv_hard_reset" },
-            { text: "Güncel Değil", next: "tv_update" }
-        ]
-    },
-    "tv_update": {
-        title: "Güncelleme",
-        text: "Kullanıcıya güncellemeleri yaptırın.",
-        options: [
-            { text: "Sorun Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "tv_hard_reset" }
-        ]
-    },
-    "tv_hard_reset": {
-        title: "Güç Döngüsü (Hard Reset)",
-        text: "TV'deki statik elektriği boşaltmak için fiş çekme işlemi.",
-        script: "Arka planda bir işlem sağlıyorum. Bu esnada TV'nizi ve modeminizi fişten çekip, 1 dakika bekleyip tekrar takabilir misiniz?",
-        options: [
-            { text: "Sorun Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "tv_speed" }
-        ]
-    },
-    "tv_speed": {
-        title: "Hız Testi",
-        text: "Kullanıcıdan 'tvhıztesti' kısayolu ile hız testi isteyin.",
-        script: "Sorunun kaynağını netleştirmek için hız testi verilerine ihtiyacımız var.",
-        options: [
-            { text: "Hız Düşük / Ping Yüksek", next: "res_isp" },
-            { text: "Değerler İyi (8mb+)", next: "tv_reinstall" }
-        ]
-    },
-    "tv_reinstall": {
-        title: "Sil & Yükle",
-        text: "Son adım olarak uygulamayı silip tekrar yükletin.",
-        options: [
-            { text: "Sorun Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "res_ticket" }
-        ]
-    },
-
-    // --- MOBİL AKIŞI ---
-    "check_broadcast_mob": {
-        title: "Yayın Kontrolü (Mobil)",
-        text: "Yayında genel bir problem var mı?",
-        options: [
-            { text: "Genel Sorun Var", next: "res_general_issue" },
-            { text: "Sorun Yok (Bireysel)", next: "mob_os" }
-        ]
-    },
-    "mob_os": {
-        title: "İşletim Sistemi",
-        text: "Cihazın işletim sistemi nedir?",
-        options: [
-            { text: "iOS (iPhone/iPad)", next: "mob_app_check" },
-            { text: "Android", next: "mob_app_check" },
-            { text: "Huawei", next: "mob_huawei" }
-        ]
-    },
-    "mob_huawei": {
-        title: "Huawei Kontrolü",
-        text: "Cihazda Google Play servisleri yüklü mü?",
-        options: [
-            { text: "Evet, Yüklü", next: "mob_app_check" },
-            { text: "Hayır (AppGallery)", next: "res_unsupported" }
-        ]
-    },
-    "mob_app_check": {
-        title: "Uygulama Sürümü",
-        text: "Mağazada (App Store/Play Store) 'Güncelle' butonu var mı?",
-        options: [
-            { text: "Uygulama Güncel", next: "mob_net" },
-            { text: "Güncelleme Var", next: "mob_update" }
-        ]
-    },
-    "mob_update": {
-        title: "Güncelleme",
-        text: "Uygulamayı güncelletin.",
-        options: [
-            { text: "Sorun Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "mob_net" }
-        ]
-    },
-    "mob_net": {
-        title: "Ağ Değişikliği",
-        text: "Wi-Fi kapatıp Mobil Veri (veya tam tersi) ile denendi mi?",
-        script: "Farklı bir internet ağıyla (Mobil veri/Wi-Fi arası geçiş yaparak) deneyebilir misiniz?",
-        options: [
-            { text: "Düzeldi (Ağ Kaynaklı)", next: "res_isp" },
-            { text: "Devam Ediyor", next: "mob_speed" }
-        ]
-    },
-    "mob_speed": {
-        title: "Hız Testi",
-        text: "Kullanıcıdan hız testi isteyin.",
-        options: [
-            { text: "Değerler Kötü", next: "res_isp" },
-            { text: "Değerler İyi", next: "mob_cache" }
-        ]
-    },
-    "mob_cache": {
-        title: "Önbellek & Reset",
-        text: "Uygulama önbelleğini temizleyin (Android) veya cihazı kapatıp açın.",
-        options: [
-            { text: "Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "mob_reinstall" }
-        ]
-    },
-    "mob_reinstall": {
-        title: "Sil & Yükle",
-        text: "Uygulamayı tamamen silip tekrar yükletin.",
-        options: [
-            { text: "Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "res_ticket" }
-        ]
-    },
-
-    // --- BİLGİSAYAR AKIŞI ---
-    "check_broadcast_pc": {
-        title: "Yayın Kontrolü (Web)",
-        text: "Yayında genel bir problem var mı?",
-        options: [
-            { text: "Genel Sorun Var", next: "res_general_issue" },
-            { text: "Sorun Yok (Bireysel)", next: "pc_browser" }
-        ]
-    },
-    "pc_browser": {
-        title: "Tarayıcı Seçimi",
-        text: "Hangi tarayıcıyı kullanıyor?",
-        options: [
-            { text: "Chrome / Safari / Edge", next: "pc_ver" },
-            { text: "Diğer (Opera/Firefox vb.)", next: "pc_other_browser" }
-        ]
-    },
-    "pc_other_browser": {
-        title: "Tarayıcı Uyarısı",
-        text: "Desteklenmeyen tarayıcı kullanımı.",
-        script: "En iyi deneyim için Chrome, Safari veya Edge tarayıcılarını öneriyoruz. Lütfen bunlardan biriyle dener misiniz?",
-        result: "red"
-    },
-    "pc_ver": {
-        title: "Sürüm & Gizli Sekme",
-        text: "Tarayıcı güncel mi? Gizli sekmede (Incognito) sorun devam ediyor mu?",
-        script: "Tarayıcınızın güncel olduğundan emin olun ve lütfen bir 'Gizli Sekme' açarak orada deneyin.",
-        options: [
-            { text: "Sorun Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "pc_net_type" }
-        ]
-    },
-    "pc_net_type": {
-        title: "Bağlantı Türü",
-        text: "İnternete nasıl bağlanıyor?",
-        options: [
-            { text: "Kablolu (Ethernet)", next: "pc_speed" },
-            { text: "Wi-Fi", next: "pc_wifi_check" }
-        ]
-    },
-    "pc_wifi_check": {
-        title: "Wi-Fi Kanalı",
-        text: "Modeme uzaklık veya frekans sorunu olabilir.",
-        script: "Modeme yaklaşabilir misiniz? Mümkünse 5GHz Wi-Fi ağına bağlanarak deneyin.",
-        options: [
-            { text: "Düzeldi", next: "res_solved" },
-            { text: "Devam Ediyor", next: "pc_speed" }
-        ]
-    },
-    "pc_speed": {
-        title: "Ping / Hız Testi",
-        text: "Terminalden 'ping cdn.ssportplus.com' testi isteyin.",
-        options: [
-            { text: "Ping Yüksek / Kayıp Var", next: "res_isp" },
-            { text: "Değerler İyi", next: "res_ticket" }
-        ]
-    },
-
-    // --- SONUÇ EKRANLARI ---
-    "res_solved": {
-        title: "Sorun Çözüldü",
-        text: "Harika! Sorun giderildi.",
-        script: "Yardımcı olabildiğime sevindim. İyi seyirler dileriz!",
-        result: "green"
-    },
-    "res_general_issue": {
-        title: "Genel Arıza",
-        text: "Yayın kaynaklı genel bir sorun mevcut.",
-        script: "Şu an genel bir teknik aksaklık yaşanmaktadır. Ekiplerimiz konu üzerinde çalışıyor, en kısa sürede düzelecektir.",
-        result: "red"
-    },
-    "res_ticket": {
-        title: "Kayıt Açılmalı",
-        text: "Tüm adımlar denendi ancak sorun devam ediyor.",
-        script: "Tüm kontrolleri sağladık. Konuyu teknik ekibimize iletiyorum, inceleme sonrası size dönüş yapılacaktır. (Talep Aç)",
-        result: "red"
-    },
-    "res_isp": {
-        title: "İnternet Kaynaklı",
-        text: "Sorun kullanıcının internet bağlantısından kaynaklanıyor.",
-        script: "Hız ve ping değerleriniz yayın kalitesi için sınırda veya yetersiz görünüyor. İnternet servis sağlayıcınızla görüşerek hattınızı kontrol ettirmelisiniz.",
-        result: "yellow"
-    },
-    "res_unsupported": {
-        title: "Cihaz Desteklenmiyor",
-        text: "Kullanıcının cihazı veya tarayıcısı desteklenmiyor.",
-        script: "Maalesef kullandığınız cihaz/tarayıcı şu an için desteklenmemektedir. Web, Mobil veya desteklenen bir Smart TV ile izleyebilirsiniz.",
-        result: "red"
-    }
-};
-
-// =========================================================
-// 1. BÖLÜM: KALİTE VE PUANLAMA
-// =========================================================
+// --- KALİTE PUANLAMA LOGİĞİ ---
 window.updateRowScore = function(index, max) {
     const slider = document.getElementById(`slider-${index}`);
     const badge = document.getElementById(`badge-${index}`);
@@ -306,38 +39,34 @@ window.updateRowScore = function(index, max) {
         row.style.borderColor = '#eee';
         row.style.background = '#fff';
     }
+    window.recalcTotalScore = function() {
+        let currentTotal = 0;
+        let maxTotal = 0;
+        const sliders = document.querySelectorAll('.slider-input');
+        sliders.forEach(s => {
+            currentTotal += parseInt(s.value) || 0;
+            maxTotal += parseInt(s.getAttribute('max')) || 0;
+        });
+        const liveScoreEl = document.getElementById('live-score');
+        const ringEl = document.getElementById('score-ring');
+        
+        if(liveScoreEl) liveScoreEl.innerText = currentTotal;
+        
+        if(ringEl) {
+            let color = '#2e7d32';
+            let ratio = maxTotal > 0 ? (currentTotal / maxTotal) * 100 : 0;
+            if(ratio < 50) color = '#d32f2f';
+            else if(ratio < 85) color = '#ed6c02';
+            else if(ratio < 95) color = '#fabb00';
+            ringEl.style.background = `conic-gradient(${color} ${ratio}%, #444 ${ratio}%)`;
+        }
+    };
     window.recalcTotalScore();
 };
 
-window.recalcTotalScore = function() {
-    let currentTotal = 0;
-    let maxTotal = 0;
-    const sliders = document.querySelectorAll('.slider-input');
-    sliders.forEach(s => {
-        currentTotal += parseInt(s.value) || 0;
-        maxTotal += parseInt(s.getAttribute('max')) || 0;
-    });
-    const liveScoreEl = document.getElementById('live-score');
-    const ringEl = document.getElementById('score-ring');
-    
-    if(liveScoreEl) liveScoreEl.innerText = currentTotal;
-    
-    if(ringEl) {
-        let color = '#2e7d32';
-        let ratio = maxTotal > 0 ? (currentTotal / maxTotal) * 100 : 0;
-        if(ratio < 50) color = '#d32f2f';
-        else if(ratio < 85) color = '#ed6c02';
-        else if(ratio < 95) color = '#fabb00';
-        ringEl.style.background = `conic-gradient(${color} ${ratio}%, #444 ${ratio}%)`;
-    }
-};
-
-// =========================================================
-// 2. BÖLÜM: YARDIMCI FONKSİYONLAR
-// =========================================================
+// --- YARDIMCI FONKSİYONLAR ---
 function getToken() { return localStorage.getItem("sSportToken"); }
 function getFavs() { return JSON.parse(localStorage.getItem('sSportFavs') || '[]'); }
-
 function toggleFavorite(title) {
     event.stopPropagation();
     let favs = getFavs();
@@ -353,9 +82,7 @@ function toggleFavorite(title) {
         renderCards(activeCards);
     }
 }
-
 function isFav(title) { return getFavs().includes(title); }
-
 function formatDateToDDMMYYYY(dateString) {
     if (!dateString) return 'N/A';
     if (dateString.match(/^\d{2}\.\d{2}\.\d{4}/)) { return dateString; }
@@ -368,7 +95,6 @@ function formatDateToDDMMYYYY(dateString) {
         return `${day}.${month}.${year}`;
     } catch (e) { return dateString; }
 }
-
 function isNew(dateStr) {
     if (!dateStr) return false;
     let date;
@@ -385,7 +111,6 @@ function isNew(dateStr) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3;
 }
-
 function getCategorySelectHtml(currentCategory, id) {
     let options = VALID_CATEGORIES.map(cat => `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat}</option>`).join('');
     if (currentCategory && !VALID_CATEGORIES.includes(currentCategory)) {
@@ -393,21 +118,16 @@ function getCategorySelectHtml(currentCategory, id) {
     }
     return `<select id="${id}" class="swal2-input" style="width:100%; margin-top:5px;">${options}</select>`;
 }
-
 function escapeForJsString(text) {
     if (!text) return "";
     return text.toString().replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
 }
-
 document.addEventListener('contextmenu', event => event.preventDefault());
 document.onkeydown = function(e) { if(e.keyCode == 123) return false; }
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
 });
-
-// =========================================================
-// 3. BÖLÜM: OTURUM YÖNETİMİ
-// =========================================================
+// --- SESSION & LOGIN ---
 function checkSession() {
     const savedUser = localStorage.getItem("sSportUser");
     const savedToken = localStorage.getItem("sSportToken");
@@ -427,9 +147,7 @@ function checkSession() {
         }
     }
 }
-
 function enterBas(e) { if (e.key === "Enter") girisYap(); }
-
 function girisYap() {
     const uName = document.getElementById("usernameInput").value.trim();
     const uPass = document.getElementById("passInput").value.trim();
@@ -445,7 +163,6 @@ function girisYap() {
     errorMsg.style.display = "none";
     document.querySelector('.login-btn').disabled = true;
     const hashedPass = CryptoJS.SHA256(uPass).toString();
-    
     fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -494,7 +211,6 @@ function girisYap() {
         errorMsg.style.display = "block";
     });
 }
-
 function checkAdmin(role) {
     const addCardDropdown = document.getElementById('dropdownAddCard');
     const quickEditDropdown = document.getElementById('dropdownQuickEdit');
@@ -514,7 +230,6 @@ function checkAdmin(role) {
         if(quickEditDropdown) quickEditDropdown.style.display = 'none';
     }
 }
-
 function logout() {
     currentUser = "";
     isAdminMode = false;
@@ -533,14 +248,12 @@ function logout() {
     document.getElementById("usernameInput").value = "";
     document.getElementById("error-msg").style.display = "none";
 }
-
 function startSessionTimer() {
     if (sessionTimeout) clearTimeout(sessionTimeout);
     sessionTimeout = setTimeout(() => {
         Swal.fire({ icon: 'warning', title: 'Oturum Süresi Doldu', text: 'Güvenlik nedeniyle otomatik çıkış yapıldı.', confirmButtonText: 'Tamam' }).then(() => { logout(); });
     }, 3600000);
 }
-
 function openUserMenu() {
     let options = {
         title: `Merhaba, ${currentUser}`,
@@ -555,7 +268,6 @@ function openUserMenu() {
         else if (result.isDenied) logout();
     });
 }
-
 async function changePasswordPopup(isMandatory = false) {
     const { value: formValues } = await Swal.fire({
         title: isMandatory ? 'Yeni Şifre Belirleyin' : 'Şifre Değiştir',
@@ -601,10 +313,7 @@ async function changePasswordPopup(isMandatory = false) {
         changePasswordPopup(true);
     }
 }
-
-// =========================================================
-// 4. BÖLÜM: VERİ ÇEKME VE KARTLAR
-// =========================================================
+// --- DATA FETCHING ---
 function loadContentData() {
     document.getElementById('loading').style.display = 'block';
     fetch(SCRIPT_URL, {
@@ -671,7 +380,6 @@ function loadContentData() {
         document.getElementById('loading').innerHTML = 'Bağlantı Hatası! Sunucuya ulaşılamıyor.';
     });
 }
-
 function loadWizardData() {
     return new Promise((resolve, reject) => {
         fetch(SCRIPT_URL, {
@@ -695,7 +403,6 @@ function loadWizardData() {
         });
     });
 }
-
 // --- RENDER & FILTERING ---
 function renderCards(data) {
     activeCards = data;
@@ -738,7 +445,6 @@ function renderCards(data) {
         container.innerHTML += html;
     });
 }
-
 function highlightText(htmlContent) {
     if (!htmlContent) return "";
     const searchTerm = document.getElementById('searchInput').value.trim();
@@ -750,14 +456,12 @@ function highlightText(htmlContent) {
         return htmlContent;
     }
 }
-
 function filterCategory(btn, cat) {
     currentCategory = cat;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     filterContent();
 }
-
 function filterContent() {
     const search = document.getElementById('searchInput').value.toLocaleLowerCase('tr-TR').trim();
     let filtered = database;
@@ -778,7 +482,6 @@ function filterContent() {
     activeCards = filtered;
     renderCards(filtered);
 }
-
 function showCardDetail(title, text) {
     Swal.fire({
         title: title,
@@ -789,12 +492,10 @@ function showCardDetail(title, text) {
         background: '#f8f9fa'
     });
 }
-
 function copyText(t) {
     navigator.clipboard.writeText(t.replace(/\\n/g, '\n')).then(() => 
         Swal.fire({icon:'success', title:'Kopyalandı', toast:true, position:'top-end', showConfirmButton:false, timer:1500}) );
 }
-
 function toggleEditMode() {
     if (!isAdminMode) return;
     isEditingActive = !isEditingActive;
@@ -810,11 +511,11 @@ function toggleEditMode() {
         btn.innerHTML = '<i class="fas fa-pen" style="color:var(--secondary);"></i> Düzenlemeyi Aç';
     }
     filterContent();
+    // Diğer modüllerdeki ikonları da güncellemek için
     if(document.getElementById('guide-modal').style.display === 'flex') openGuide();
     if(document.getElementById('sales-modal').style.display === 'flex') openSales();
     if(document.getElementById('news-modal').style.display === 'flex') openNews();
 }
-
 function sendUpdate(o, c, v, t='card') {
     if (!Swal.isVisible()) Swal.fire({ title: 'Kaydediliyor...', didOpen: () => { Swal.showLoading() } });
     fetch(SCRIPT_URL, {
@@ -831,7 +532,6 @@ function sendUpdate(o, c, v, t='card') {
         }
     }).catch(err => Swal.fire('Hata', 'Sunucu hatası.', 'error'));
 }
-
 // --- CRUD OPERASYONLARI ---
 async function addNewCardPopup() {
     const catSelectHTML = getCategorySelectHtml('Bilgi', 'swal-new-cat');
@@ -1129,7 +829,6 @@ async function editNews(index) {
         if(formValues[0] !== originalTitle) setTimeout(() => sendUpdate(originalTitle, "Title", formValues[0], 'news'), 2000);
     }
 }
-
 // --- MODALS ---
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 let tickerIndex = 0;
@@ -1216,8 +915,7 @@ function toggleSales(index) {
         icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
     }
 }
-
-// --- KALİTE FONKSİYONLARI ---
+// --- KALİTE FONKSİYONLARI (GÜNCELLENMİŞ VERSİYON) ---
 function populateMonthFilter() {
     const selectEl = document.getElementById('month-select-filter');
     if (!selectEl) return;
@@ -1245,11 +943,12 @@ function openQualityArea() {
     document.getElementById('admin-quality-controls').style.display = isAdminMode ? 'block' : 'none';
     populateMonthFilter();
     
-    // DASHBOARD ELEMENTLERİ
+    // YENİ DASHBOARD ELEMENTLERİ (Hata Önlemi)
     const dashAvg = document.getElementById('dash-avg-score');
     const dashCount = document.getElementById('dash-eval-count');
     const dashTarget = document.getElementById('dash-target-rate');
     
+    // Varsa sıfırla, yoksa hata verme
     if(dashAvg) dashAvg.innerText = "-";
     if(dashCount) dashCount.innerText = "-";
     if(dashTarget) dashTarget.innerText = "-%";
@@ -1352,7 +1051,7 @@ async function fetchEvaluationsForAgent(forcedName) {
             body: JSON.stringify({ 
                 action: "fetchEvaluations", 
                 targetAgent: targetAgent, 
-                targetGroup: targetGroup, 
+                targetGroup: targetGroup, // Backend'e grubu da gönderiyoruz
                 username: currentUser, 
                 token: getToken() 
             })
@@ -1400,7 +1099,7 @@ async function fetchEvaluationsForAgent(forcedName) {
                     detailHtml += '</table>';
                 } catch (e) { detailHtml = `<p style="white-space:pre-wrap; margin:0; font-size:0.9rem;">${evalItem.details}</p>`; }
                 let editBtn = isAdminMode ? `<i class="fas fa-pen" style="font-size:1rem; color:#fabb00; cursor:pointer; margin-right:5px; padding:5px;" onclick="event.stopPropagation(); editEvaluation('${evalItem.callId}')" title="Kaydı Düzenle"></i>` : '';
-                // Eğer Toplu Gösterim modundaysak, her satırda Ajan adını da gösterelim
+                // Eğer Toplu Gösterim modundaysak, her satırda Ajan adını da gösterelim ki karışmasın
                 let agentNameDisplay = (targetAgent === 'all') ? `<span style="font-size:0.8rem; font-weight:bold; color:#555; background:#eee; padding:2px 6px; border-radius:4px; margin-left:10px;">${evalItem.agent}</span>` : '';
                 html += `<div class="evaluation-summary" id="eval-summary-${index}" style="position:relative; border:1px solid #eaedf2; border-left:4px solid ${scoreColor}; padding:15px; margin-bottom:10px; border-radius:8px; background:#fff; cursor:pointer; transition:all 0.2s ease;" onclick="toggleEvaluationDetail(${index})">
                     
@@ -1450,17 +1149,20 @@ async function fetchEvaluationsForAgent(forcedName) {
         listEl.innerHTML = `<p style="color:red; text-align:center;">Bağlantı hatası.</p>`;
     }
 }
+// --- YENİ RAPOR EXPORT FONKSİYONU ---
+// --- YENİ RAPOR EXPORT FONKSİYONU (DÜZELTİLMİŞ) ---
 async function exportEvaluations() {
     if (!isAdminMode) {
         Swal.fire('Hata', 'Bu işlem için yönetici yetkisi gereklidir.', 'error');
         return;
     }
+    // --- DEĞİŞİKLİK BAŞLANGICI ---
     const agentSelect = document.getElementById('agent-select-admin');
-    const groupSelect = document.getElementById('group-select-admin');
+    const groupSelect = document.getElementById('group-select-admin'); // Grup seçim elementini alıyoruz
     
     const targetAgent = agentSelect ? agentSelect.value : 'all';
-    const targetGroup = groupSelect ? groupSelect.value : 'all';
-    
+    const targetGroup = groupSelect ? groupSelect.value : 'all'; // Grup değerini alıyoruz (yoksa 'all' varsayıyoruz)
+    // --- DEĞİŞİKLİK BİTİŞİ ---
     const agentName = targetAgent === 'all' ? (targetGroup === 'all' ? 'Tüm Şirket' : targetGroup + ' Ekibi') : targetAgent;
     const { isConfirmed } = await Swal.fire({
         icon: 'question',
@@ -1481,7 +1183,7 @@ async function exportEvaluations() {
             body: JSON.stringify({
                 action: "exportEvaluations",
                 targetAgent: targetAgent,
-                targetGroup: targetGroup,
+                targetGroup: targetGroup, // <-- KRİTİK NOKTA: Buraya targetGroup eklendi
                 username: currentUser,
                 token: getToken()
             })
@@ -1570,7 +1272,9 @@ async function logEvaluationPopup() {
         return;
     }
     // 1. ADIM: Grubun Doğru Belirlenmesi
+    // Dropdown attribute'una güvenmek yerine, loaded listeden (adminUserList) doğru grubu bulalım.
     let agentGroup = 'Genel';
+    // Case-insensitive ve güvenli arama
     const foundUser = adminUserList.find(u => u.name.toLowerCase() === agentName.toLowerCase());
     if (foundUser && foundUser.group) {
         agentGroup = foundUser.group;
@@ -1601,6 +1305,8 @@ async function logEvaluationPopup() {
     Swal.fire({ title: 'Değerlendirme Formu Hazırlanıyor...', didOpen: () => Swal.showLoading() });
     
     let criteriaList = [];
+    // 2. ADIM: Kriterleri Çekme (Daha esnek kontrol)
+    // Grup ne olursa olsun sunucuya soralım, varsa getirsin.
     if(agentGroup && agentGroup !== 'Genel') { 
         criteriaList = await fetchCriteria(agentGroup);
     } 
@@ -1746,6 +1452,7 @@ async function logEvaluationPopup() {
     }
 }
 async function editEvaluation(targetCallId) {
+    // 1. ID Kontrolü (Güçlendirilmiş - String Eşleşmesi)
     const evalData = allEvaluationsData.find(item => String(item.callId).trim() === String(targetCallId).trim());
     
     if (!evalData) {
@@ -1754,6 +1461,7 @@ async function editEvaluation(targetCallId) {
     }
     
     const agentName = evalData.agent || evalData.agentName;
+    // 2. Grup Kontrolü (Doğrudan Veriden Okuma - Hatayı Önleyen Kritik Düzeltme)
     const agentGroup = evalData.group || 'Genel';
     Swal.fire({ title: 'Kayıtlar İnceleniyor...', didOpen: () => Swal.showLoading() });
     
@@ -1765,6 +1473,7 @@ async function editEvaluation(targetCallId) {
     
     const isCriteriaBased = criteriaList.length > 0;
     let oldDetails = [];
+    // JSON Parse Hatası Önlemi
     try { oldDetails = JSON.parse(evalData.details || "[]"); } catch(e) { oldDetails = []; }
     
     let contentHtml = `
@@ -1900,7 +1609,6 @@ async function editEvaluation(targetCallId) {
         }).catch(err => { Swal.fire('Hata', 'Sunucu hatası.', 'error'); });
     }
 }
-
 // --- PENALTY GAME FUNCTIONS ---
 let pScore=0, pBalls=10, pCurrentQ=null;
 function updateJokerButtons() {
@@ -2135,7 +1843,6 @@ function finishPenaltyGame() {
         body: JSON.stringify({ action: "logQuiz", username: currentUser, token: getToken(), score: pScore * 10, total: 100 })
     });
 }
-
 // --- WIZARD FONKSİYONLARI ---
 function openWizard(){
     document.getElementById('wizard-modal').style.display='flex';
@@ -2181,93 +1888,319 @@ function renderStep(k){
     b.innerHTML = h;
 }
 
-// --- TEKNİK ASİSTAN FONKSİYONLARI (KODA GÖMÜLÜ) ---
-function openTechnicalWizard() {
+// --- TEKNİK SİHİRBAZ MODÜLÜ ---
+
+// State Yönetimi
+const twState = {
+    platform: null,
+    currentStep: 'start',
+    history: []
+};
+
+// Modal Açma Fonksiyonu
+function openTechWizard() {
     document.getElementById('tech-wizard-modal').style.display = 'flex';
-    technicalHistory = []; // Geçmişi sıfırla
-    currentTechnicalStepId = 'start'; // Başlangıca ayarla
-    renderTechnicalStep('start');
+    twRenderStep(); // Modalı açarken render et
 }
 
-// Adım değiştiğinde
-function handleTechnicalNext(nextId) {
-    technicalHistory.push(currentTechnicalStepId); // Mevcut adımı kaydet
-    renderTechnicalStep(nextId);
+// Navigasyon ve Render Mantığı
+function twRenderStep() {
+    const contentDiv = document.getElementById('tech-wizard-content');
+    const backBtn = document.getElementById('tw-btn-back');
+    let html = '';
+
+    // Geri butonu görünürlüğü
+    if (twState.history.length > 0) {
+        backBtn.style.display = 'block';
+    } else {
+        backBtn.style.display = 'none';
+    }
+
+    switch (twState.currentStep) {
+        case 'start':
+            html = `
+                <div class="tech-step-title">Sorun Yaşanan Platform</div>
+                <p style="font-size:1.1rem">Müşterinin yayın donma sorunu yaşadığı cihazı seçiniz:</p>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-primary" onclick="twSetPlatform('TV')">📺 TV (Smart/Box)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twSetPlatform('MOBIL')">📱 Mobil (App)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twSetPlatform('PC')">💻 Bilgisayar (Web)</button>
+                </div>
+            `;
+            break;
+
+        case 'check_broadcast':
+            html = `
+                <div class="tech-step-title">1. Adım: Yayın Kontrolü</div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Sorun:</span>
+                    "Hangi yayında bu sorunu yaşamaktasınız?"
+                </div>
+                <div class="tech-alert">
+                    <strong>⚠️ DİKKAT:</strong> Yayın odasını ve teknik kanalları kontrol edin. 
+                    Bu yayında <u>GENEL</u> bir sorun var mı?
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('general_issue')">EVET, Genel Sorun Var</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('no_general_issue')">HAYIR, Yayın Normal</button>
+                </div>
+            `;
+            break;
+
+        case 'general_issue':
+            html = `
+                <div class="tech-step-title">Sonuç: Yayın Kaynaklı Sorun</div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Okunacak:</span>
+                    "Yaşanan aksaklık için özür dileriz. Teknik ekibimiz sorunun çözümü için çalışma yapmaktadır. Kısa süre içerisinde sorun düzelecektir."
+                </div>
+                <div class="tech-alert">Görüşme sonlandırılabilir.</div>
+            `;
+            break;
+
+        case 'no_general_issue':
+            html = `
+                <div class="tech-step-title">2. Adım: Birlikte Kontrol</div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Okunacak:</span>
+                    "İlgili yayında genel bir sorun bulunmuyor fakat birlikte kontrol sağlayalım."
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-primary" onclick="twGoToPlatformSpecific()">Teknik Adımları Başlat ➡</button>
+                </div>
+            `;
+            break;
+
+        // --- TV SENARYOSU ---
+        case 'tv_step_1':
+            html = `
+                <div class="tech-step-title">TV: Güç Döngüsü (Power Cycle)</div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Okunacak:</span>
+                    "Arka planda bir işlem sağlıyorum. Bu esnada TV ve modemi fişlerinden çıkartarak kapatıp 1 dakika kadar kapalı kalmasını sağlayabilir misiniz?"
+                </div>
+                <p><em>Amaç: İnternet sinyal kalitesini iyileştirmek.</em></p>
+                <hr style="border-top:1px dashed #ccc; margin:15px 0;">
+                <p><strong>Cihazları açtıktan sonra yayın düzeldi mi?</strong></p>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('solved')">EVET (Düzeldi)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('tv_step_2')">HAYIR (Devam Ediyor)</button>
+                </div>
+            `;
+            break;
+
+        case 'tv_step_2':
+            html = `
+                <div class="tech-step-title">TV: Hız Testi Verileri</div>
+                <p>Kullanıcıdan <strong>"tvhıztesti"</strong> kısayolu ile verileri isteyin.</p>
+                <div class="tech-alert">
+                    <strong>Referans Değerler:</strong><br>
+                    ⬇ Download: <strong>8 Mbps</strong> ve üstü<br>
+                    ⟳ Ping: <strong>40 ms</strong> ve altı
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('isp_issue')">HAYIR (İnternet Kötü)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('escalate_tech')">EVET (Normal)</button>
+                </div>
+            `;
+            break;
+
+        // --- MOBİL SENARYOSU ---
+        case 'mobil_step_1':
+            html = `
+                <div class="tech-step-title">Mobil: Kontrol ve Hız Testi</div>
+                <p>Kullanıcıdan <strong>"mobilhıztesti"</strong> kısayolu ile verileri isteyin.</p>
+                <ul class="tech-steps-list">
+                    <li><strong>TvManager Kontrolü:</strong> Cihaz işletim sistemi ve App sürümünü kontrol et.</li>
+                    <li><strong>Güncelleme:</strong> Uygulama güncel değilse silip tekrar yükletin.</li>
+                </ul>
+                <div class="tech-alert">
+                    <strong>Referans Değerler:</strong><br>
+                    ⬇ Download: <strong>8 Mbps</strong> ve üstü<br>
+                    ⟳ Ping: <strong>40 ms</strong> ve altı
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('isp_issue')">HAYIR (İnternet Kötü)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('mobil_step_2')">EVET (Normal)</button>
+                </div>
+            `;
+            break;
+            
+        case 'mobil_step_2':
+             html = `
+                <div class="tech-step-title">Mobil: Önbellek ve Reset</div>
+                <ul class="tech-steps-list">
+                    <li><strong>Önbellek (Android):</strong> Uygulama ayarlarından önbelleği temizletin.</li>
+                    <li><strong>Yeniden Başlatma:</strong> Cihazı tamamen kapatıp açtırın.</li>
+                    <li><strong>Tarayıcı Testi:</strong> Mobil tarayıcı üzerinden girmeyi denesin.</li>
+                </ul>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('solved')">EVET (Düzeldi)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('escalate_tech')">HAYIR (Devam Ediyor)</button>
+                </div>
+            `;
+            break;
+
+        // --- PC SENARYOSU ---
+        case 'pc_step_1':
+            html = `
+                <div class="tech-step-title">Bilgisayar: Hız Testi</div>
+                <p>Kullanıcıdan <strong>"webhıztesti"</strong> kısayolu ile verileri isteyin.</p>
+                <div class="tech-alert">
+                    <strong>Referans Değerler:</strong><br>
+                    ⬇ Download: <strong>8 Mbps</strong> ve üstü<br>
+                    ⟳ Ping: <strong>40 ms</strong> ve altı
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('isp_issue')">HAYIR (İnternet Kötü)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('pc_step_2')">EVET (Normal)</button>
+                </div>
+            `;
+            break;
+
+        case 'pc_step_2':
+            html = `
+                <div class="tech-step-title">Bilgisayar: İşletim Sistemi</div>
+                <p>Kullanıcının cihazı hangisi?</p>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('pc_win_ping')">Windows</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('pc_mac_ping')">Macbook (macOS)</button>
+                </div>
+            `;
+            break;
+
+        // --- PC WINDOWS ---
+        case 'pc_win_ping':
+            html = `
+                <div class="tech-step-title">Windows: CMD Ping Testi</div>
+                <p>Kullanıcıya <strong>"pingWindows10"</strong> kısayolunu iletin:</p>
+                <div class="tech-code-block">ping cdn.ssportplus.com -n 20</div>
+                <div class="tech-alert">
+                    <strong>Kontrol:</strong> Sonuçlarda "Time" (Süre) kısmı <strong>35ms ve üzeri</strong> mi?
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('pc_win_host')">EVET (Yüksek Ping)</button>
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('escalate_tech')">HAYIR (Ping Normal)</button>
+                </div>
+            `;
+            break;
+
+        case 'pc_win_host':
+            html = `
+                <div class="tech-step-title">Windows: Host Dosyası</div>
+                <ul class="tech-steps-list">
+                    <li><strong>HOST Kısayolları:</strong> Kullanıcıya <code>HOST1</code> ve <code>HOST2</code> gönderin.</li>
+                    <li><strong>Tarayıcı:</strong> Farklı bir tarayıcı açmasını isteyin.</li>
+                    <li><strong>Çözünürlük:</strong> Player ayarlarından 1080p veya 720p'ye sabitlesin.</li>
+                </ul>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('solved')">EVET (Düzeldi)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('escalate_tech')">HAYIR (Devam Ediyor)</button>
+                </div>
+            `;
+            break;
+
+        // --- PC MAC ---
+        case 'pc_mac_ping':
+            html = `
+                <div class="tech-step-title">Macbook: Terminal Ping Testi</div>
+                <p>Kullanıcıya <strong>"pingmacOS"</strong> kısayolunu iletin:</p>
+                <div class="tech-code-block">ping cdn.ssportplus.com -c 20</div>
+                <div class="tech-alert">
+                    <strong>Kontrol:</strong> Sonuçlarda "Time" (Süre) kısmı <strong>35ms ve üzeri</strong> mi?
+                </div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('pc_mac_host')">EVET (Yüksek Ping)</button>
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('escalate_tech')">HAYIR (Ping Normal)</button>
+                </div>
+            `;
+            break;
+
+        case 'pc_mac_host':
+            html = `
+                <div class="tech-step-title">Macbook: Host Dosyası</div>
+                <p>Kısayol: <code>pingmacoshost</code>. Adımları uygulatın.</p>
+                <div class="tech-code-block">sudo nano /etc/hosts</div>
+                <div class="tech-code-block">ping 193.192.103.249 -c 20 cdn.ssportplus.com</div>
+                <div class="tech-buttons-area">
+                    <button class="tech-btn tech-btn-option" onclick="twChangeStep('solved')">EVET (Düzeldi)</button>
+                    <button class="tech-btn tech-btn-primary" onclick="twChangeStep('escalate_tech')">HAYIR (Devam Ediyor)</button>
+                </div>
+            `;
+            break;
+
+        // --- SONUÇLAR ---
+        case 'isp_issue':
+            html = `
+                <div class="tech-step-title">Sonuç: İnternet Kaynaklı Sorun</div>
+                <div class="tech-alert" style="background-color:#f8d7da; border-color:#f5c6cb; color:#721c24;">
+                    <strong>Hız/Ping Yetersiz:</strong> Download < 8mbps VEYA Ping > 40ms.
+                </div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Okunacak:</span>
+                    "S Sport Plus'ı sağlıklı bir şekilde izleyebilmeniz için en az 8 mb hıza ve 40 ms altında ping değerine sahip olmalısınız. Sorunu internet kaynaklı yaşadığınız gözükmekte."
+                </div>
+                <button class="tech-btn tech-btn-primary" onclick="twResetWizard()">Yeni İşlem</button>
+            `;
+            break;
+
+        case 'escalate_tech':
+            html = `
+                <div class="tech-step-title">Sonuç: Teknik Ekibe Yönlendirme</div>
+                <div class="tech-alert">
+                    Tüm teknik müdahaleler yapıldı ancak sorun çözülemedi.
+                </div>
+                <div class="tech-script-box">
+                    <span class="tech-script-label">Müşteriye Okunacak:</span>
+                    "Gerekli bilgileri aldım; konuyu incelemesi için teknik ekibe ileteceğim."
+                </div>
+                <div class="tech-alert"><strong>Aksiyon:</strong> Kaydı teknik ekibe atayın.</div>
+                <button class="tech-btn tech-btn-primary" onclick="twResetWizard()">Yeni İşlem</button>
+            `;
+            break;
+
+        case 'solved':
+            html = `
+                <div class="tech-step-title">✅ Sorun Çözüldü</div>
+                <div class="tech-alert" style="background-color:#d4edda; border-color:#c3e6cb; color:#155724;">
+                    Müşterinin sorunu giderildi.
+                </div>
+                <button class="tech-btn tech-btn-primary" onclick="twResetWizard()">Yeni İşlem</button>
+            `;
+            break;
+    }
+
+    contentDiv.innerHTML = html;
 }
 
-// Geri tuşuna basıldığında
-function handleTechnicalBack() {
-    if (technicalHistory.length > 0) {
-        const prevId = technicalHistory.pop(); // Son adımı al ve listeden çıkar
-        renderTechnicalStep(prevId);
+// Navigasyon Fonksiyonları
+function twChangeStep(newStep) {
+    twState.history.push(twState.currentStep);
+    twState.currentStep = newStep;
+    twRenderStep();
+}
+
+function twGoBack() {
+    if (twState.history.length > 0) {
+        twState.currentStep = twState.history.pop();
+        twRenderStep();
     }
 }
 
-function renderTechnicalStep(stepId) {
-    // Veriyi global TECHNICAL_STEPS değişkeninden alıyoruz
-    const step = TECHNICAL_STEPS[stepId];
-    const container = document.getElementById('tech-wizard-body');
-    
-    if (!step) {
-        container.innerHTML = `<h3 style="color:red; text-align:center;">Hata: "${stepId}" adımı bulunamadı.</h3><div style="text-align:center;"><button class="restart-btn" onclick="renderTechnicalStep('start')">Başa Dön</button></div>`;
-        return;
-    }
-    
-    // Mevcut adımı güncelle (Geri dönülse bile burası güncellenmeli ki bir sonraki ileri adımda doğru kayıt yapılsın)
-    currentTechnicalStepId = stepId;
+function twSetPlatform(p) {
+    twState.platform = p;
+    twChangeStep('check_broadcast');
+}
 
-    let html = `
-        <div style="text-align:center; margin-bottom:20px;">
-            <h2 style="color:#0288d1; margin-bottom:5px;"><i class="fas fa-wrench"></i> ${step.title || ''}</h2>
-            <div style="width:50px; height:3px; background:#0288d1; margin:0 auto;"></div>
-        </div>
-    `;
+function twGoToPlatformSpecific() {
+    if (twState.platform === 'TV') twChangeStep('tv_step_1');
+    else if (twState.platform === 'MOBIL') twChangeStep('mobil_step_1');
+    else if (twState.platform === 'PC') twChangeStep('pc_step_1');
+}
 
-    // SONUÇ EKRANI (Result varsa)
-    if (step.result) {
-        let resultIcon = step.result === 'green' ? '✅' : (step.result === 'red' ? '🛑' : '⚠️');
-        let resultClass = step.result === 'green' ? 'res-green' : (step.result === 'red' ? 'res-red' : 'res-yellow');
-        
-        html += `
-            <div class="result-box ${resultClass}">
-                <div style="font-size:3rem; margin-bottom:15px;">${resultIcon}</div>
-                <h3 style="margin:0 0 10px 0;">${step.text}</h3>
-                ${step.script ? `<div class="script-box" style="font-size:1rem; margin-top:15px; text-align:left;">${step.script}</div>` : ''}
-            </div>
-        `;
-    } 
-    // SORU EKRANI (Seçenekler varsa)
-    else {
-        html += `
-            <p style="font-size:1.1rem; text-align:center; margin-bottom:20px; color:#333;">${step.text}</p>
-            ${step.script ? `<div class="script-box" style="margin-bottom:20px;">${step.script}</div>` : ''}
-            <div class="wizard-options">
-        `;
-        
-        if(step.options && step.options.length > 0) {
-            step.options.forEach(opt => {
-                html += `<button class="option-btn" onclick="handleTechnicalNext('${opt.next}')">
-                            <i class="fas fa-chevron-right" style="float:right; opacity:0.5;"></i> ${opt.text}
-                         </button>`;
-            });
-        }
-        html += `</div>`;
-    }
-    
-    // --- BUTON ALANI (GERİ ve BAŞA DÖN) ---
-    html += `<div style="margin-top:20px; display:flex; justify-content:center; gap:10px;">`;
-    
-    // Geri Butonu (Sadece geçmişte adım varsa göster)
-    if (technicalHistory.length > 0) {
-        html += `<button class="restart-btn" style="background:#999; color:white;" onclick="handleTechnicalBack()"><i class="fas fa-arrow-left"></i> Geri</button>`;
-    }
-
-    // Başa Dön Butonu (Başlangıç ekranı hariç her yerde göster)
-    if (stepId !== 'start') {
-        html += `<button class="restart-btn" onclick="openTechnicalWizard()"><i class="fas fa-redo"></i> Başa Dön</button>`;
-    }
-    
-    html += `</div>`;
-
-    container.innerHTML = html;
+function twResetWizard() {
+    twState.platform = null;
+    twState.currentStep = 'start';
+    twState.history = [];
+    twRenderStep();
 }
