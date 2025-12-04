@@ -1,5 +1,5 @@
 const BAKIM_MODU = false;
-// Apps Script URL'nizi buraya yapıştırın.
+// Apps Script URL'si
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3kd04k2u9XdVDD1-vdbQQAsHNW6WLIn8bNYxTlVCL3U1a0WqZo6oPp9zfBWIpwJEinQ/exec";
 
 // --- OYUN DEĞİŞKENLERİ ---
@@ -21,9 +21,263 @@ let currentCategory = 'all';
 let adminUserList = [];
 let allEvaluationsData = [];
 let wizardStepsData = {};
-let technicalStepsData = {}; // Teknik Asistan Verisi
 
 const MONTH_NAMES = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+// =========================================================
+// 0. BÖLÜM: TEKNİK ASİSTAN VERİSİ (KODA GÖMÜLÜ - SABİT)
+// =========================================================
+// Bu veri doğrudan uygulamanın içinde durur, sunucudan çekilmez. %100 Hızlı ve Hatasızdır.
+const TECHNICAL_STEPS = {
+    // --- BAŞLANGIÇ ---
+    "start": {
+        title: "Donma Sorunu Çözüm Merkezi",
+        text: "Üye hangi cihazda donma/takılma sorunu yaşıyor?",
+        options: [
+            { text: "TV (Smart TV / Box)", next: "check_broadcast_tv" },
+            { text: "Mobil (Telefon / Tablet)", next: "check_broadcast_mob" },
+            { text: "Bilgisayar (Web)", next: "check_broadcast_pc" }
+        ]
+    },
+
+    // --- TV AKIŞI ---
+    "check_broadcast_tv": {
+        title: "Yayın Kontrolü (TV)",
+        text: "Hangi yayında sorun yaşanıyor? Canlı yayında genel bir sorun var mı?",
+        script: "Tüm yayınlarımız yayın odamız tarafından takip edilmektedir. İlgili yayında genel bir sorun görünmüyor ancak birlikte kontrol edelim.",
+        options: [
+            { text: "Genel Sorun Var", next: "res_general_issue" },
+            { text: "Sorun Yok (Bireysel)", next: "tv_start" }
+        ]
+    },
+    "tv_start": {
+        title: "TV Markası",
+        text: "Hangi marka TV veya cihaz kullanılıyor?",
+        options: [
+            { text: "Samsung / LG", next: "tv_os" },
+            { text: "Android TV / Mi Box", next: "tv_os" },
+            { text: "Apple TV", next: "tv_os" },
+            { text: "Diğer (Vestel/Arçelik vb.)", next: "tv_other" }
+        ]
+    },
+    "tv_other": {
+        title: "Cihaz Desteği",
+        text: "Kullanıcının cihazının uygulama mağazasında S Sport Plus var mı?",
+        options: [
+            { text: "Uygulama Var", next: "tv_os" },
+            { text: "Uygulama Yok", next: "res_unsupported" }
+        ]
+    },
+    "tv_os": {
+        title: "Yazılım Güncelliği",
+        text: "TV yazılımı ve S Sport Plus uygulaması güncel mi?",
+        script: "TV ayarlarından sistem güncellemelerini ve mağazadan uygulama güncelliğini kontrol edebilir misiniz?",
+        options: [
+            { text: "Her Şey Güncel", next: "tv_hard_reset" },
+            { text: "Güncel Değil", next: "tv_update" }
+        ]
+    },
+    "tv_update": {
+        title: "Güncelleme",
+        text: "Kullanıcıya güncellemeleri yaptırın.",
+        options: [
+            { text: "Sorun Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "tv_hard_reset" }
+        ]
+    },
+    "tv_hard_reset": {
+        title: "Güç Döngüsü (Hard Reset)",
+        text: "TV'deki statik elektriği boşaltmak için fiş çekme işlemi.",
+        script: "Arka planda bir işlem sağlıyorum. Bu esnada TV'nizi ve modeminizi fişten çekip, 1 dakika bekleyip tekrar takabilir misiniz?",
+        options: [
+            { text: "Sorun Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "tv_speed" }
+        ]
+    },
+    "tv_speed": {
+        title: "Hız Testi",
+        text: "Kullanıcıdan 'tvhıztesti' kısayolu ile hız testi isteyin.",
+        script: "Sorunun kaynağını netleştirmek için hız testi verilerine ihtiyacımız var.",
+        options: [
+            { text: "Hız Düşük / Ping Yüksek", next: "res_isp" },
+            { text: "Değerler İyi (8mb+)", next: "tv_reinstall" }
+        ]
+    },
+    "tv_reinstall": {
+        title: "Sil & Yükle",
+        text: "Son adım olarak uygulamayı silip tekrar yükletin.",
+        options: [
+            { text: "Sorun Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "res_ticket" }
+        ]
+    },
+
+    // --- MOBİL AKIŞI ---
+    "check_broadcast_mob": {
+        title: "Yayın Kontrolü (Mobil)",
+        text: "Yayında genel bir problem var mı?",
+        options: [
+            { text: "Genel Sorun Var", next: "res_general_issue" },
+            { text: "Sorun Yok (Bireysel)", next: "mob_os" }
+        ]
+    },
+    "mob_os": {
+        title: "İşletim Sistemi",
+        text: "Cihazın işletim sistemi nedir?",
+        options: [
+            { text: "iOS (iPhone/iPad)", next: "mob_app_check" },
+            { text: "Android", next: "mob_app_check" },
+            { text: "Huawei", next: "mob_huawei" }
+        ]
+    },
+    "mob_huawei": {
+        title: "Huawei Kontrolü",
+        text: "Cihazda Google Play servisleri yüklü mü?",
+        options: [
+            { text: "Evet, Yüklü", next: "mob_app_check" },
+            { text: "Hayır (AppGallery)", next: "res_unsupported" }
+        ]
+    },
+    "mob_app_check": {
+        title: "Uygulama Sürümü",
+        text: "Mağazada (App Store/Play Store) 'Güncelle' butonu var mı?",
+        options: [
+            { text: "Uygulama Güncel", next: "mob_net" },
+            { text: "Güncelleme Var", next: "mob_update" }
+        ]
+    },
+    "mob_update": {
+        title: "Güncelleme",
+        text: "Uygulamayı güncelletin.",
+        options: [
+            { text: "Sorun Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "mob_net" }
+        ]
+    },
+    "mob_net": {
+        title: "Ağ Değişikliği",
+        text: "Wi-Fi kapatıp Mobil Veri (veya tam tersi) ile denendi mi?",
+        script: "Farklı bir internet ağıyla (Mobil veri/Wi-Fi arası geçiş yaparak) deneyebilir misiniz?",
+        options: [
+            { text: "Düzeldi (Ağ Kaynaklı)", next: "res_isp" },
+            { text: "Devam Ediyor", next: "mob_speed" }
+        ]
+    },
+    "mob_speed": {
+        title: "Hız Testi",
+        text: "Kullanıcıdan hız testi isteyin.",
+        options: [
+            { text: "Değerler Kötü", next: "res_isp" },
+            { text: "Değerler İyi", next: "mob_cache" }
+        ]
+    },
+    "mob_cache": {
+        title: "Önbellek & Reset",
+        text: "Uygulama önbelleğini temizleyin (Android) veya cihazı kapatıp açın.",
+        options: [
+            { text: "Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "mob_reinstall" }
+        ]
+    },
+    "mob_reinstall": {
+        title: "Sil & Yükle",
+        text: "Uygulamayı tamamen silip tekrar yükletin.",
+        options: [
+            { text: "Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "res_ticket" }
+        ]
+    },
+
+    // --- BİLGİSAYAR AKIŞI ---
+    "check_broadcast_pc": {
+        title: "Yayın Kontrolü (Web)",
+        text: "Yayında genel bir problem var mı?",
+        options: [
+            { text: "Genel Sorun Var", next: "res_general_issue" },
+            { text: "Sorun Yok (Bireysel)", next: "pc_browser" }
+        ]
+    },
+    "pc_browser": {
+        title: "Tarayıcı Seçimi",
+        text: "Hangi tarayıcıyı kullanıyor?",
+        options: [
+            { text: "Chrome / Safari / Edge", next: "pc_ver" },
+            { text: "Diğer (Opera/Firefox vb.)", next: "pc_other_browser" }
+        ]
+    },
+    "pc_other_browser": {
+        title: "Tarayıcı Uyarısı",
+        text: "Desteklenmeyen tarayıcı kullanımı.",
+        script: "En iyi deneyim için Chrome, Safari veya Edge tarayıcılarını öneriyoruz. Lütfen bunlardan biriyle dener misiniz?",
+        result: "red"
+    },
+    "pc_ver": {
+        title: "Sürüm & Gizli Sekme",
+        text: "Tarayıcı güncel mi? Gizli sekmede (Incognito) sorun devam ediyor mu?",
+        script: "Tarayıcınızın güncel olduğundan emin olun ve lütfen bir 'Gizli Sekme' açarak orada deneyin.",
+        options: [
+            { text: "Sorun Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "pc_net_type" }
+        ]
+    },
+    "pc_net_type": {
+        title: "Bağlantı Türü",
+        text: "İnternete nasıl bağlanıyor?",
+        options: [
+            { text: "Kablolu (Ethernet)", next: "pc_speed" },
+            { text: "Wi-Fi", next: "pc_wifi_check" }
+        ]
+    },
+    "pc_wifi_check": {
+        title: "Wi-Fi Kanalı",
+        text: "Modeme uzaklık veya frekans sorunu olabilir.",
+        script: "Modeme yaklaşabilir misiniz? Mümkünse 5GHz Wi-Fi ağına bağlanarak deneyin.",
+        options: [
+            { text: "Düzeldi", next: "res_solved" },
+            { text: "Devam Ediyor", next: "pc_speed" }
+        ]
+    },
+    "pc_speed": {
+        title: "Ping / Hız Testi",
+        text: "Terminalden 'ping cdn.ssportplus.com' testi isteyin.",
+        options: [
+            { text: "Ping Yüksek / Kayıp Var", next: "res_isp" },
+            { text: "Değerler İyi", next: "res_ticket" }
+        ]
+    },
+
+    // --- SONUÇ EKRANLARI ---
+    "res_solved": {
+        title: "Sorun Çözüldü",
+        text: "Harika! Sorun giderildi.",
+        script: "Yardımcı olabildiğime sevindim. İyi seyirler dileriz!",
+        result: "green"
+    },
+    "res_general_issue": {
+        title: "Genel Arıza",
+        text: "Yayın kaynaklı genel bir sorun mevcut.",
+        script: "Şu an genel bir teknik aksaklık yaşanmaktadır. Ekiplerimiz konu üzerinde çalışıyor, en kısa sürede düzelecektir.",
+        result: "red"
+    },
+    "res_ticket": {
+        title: "Kayıt Açılmalı",
+        text: "Tüm adımlar denendi ancak sorun devam ediyor.",
+        script: "Tüm kontrolleri sağladık. Konuyu teknik ekibimize iletiyorum, inceleme sonrası size dönüş yapılacaktır. (Talep Aç)",
+        result: "red"
+    },
+    "res_isp": {
+        title: "İnternet Kaynaklı",
+        text: "Sorun kullanıcının internet bağlantısından kaynaklanıyor.",
+        script: "Hız ve ping değerleriniz yayın kalitesi için sınırda veya yetersiz görünüyor. İnternet servis sağlayıcınızla görüşerek hattınızı kontrol ettirmelisiniz.",
+        result: "yellow"
+    },
+    "res_unsupported": {
+        title: "Cihaz Desteklenmiyor",
+        text: "Kullanıcının cihazı veya tarayıcısı desteklenmiyor.",
+        script: "Maalesef kullandığınız cihaz/tarayıcı şu an için desteklenmemektedir. Web, Mobil veya desteklenen bir Smart TV ile izleyebilirsiniz.",
+        result: "red"
+    }
+};
 
 // =========================================================
 // 1. BÖLÜM: KALİTE VE PUANLAMA
@@ -434,37 +688,6 @@ function loadWizardData() {
         })
         .catch(error => {
             wizardStepsData = {};
-            reject(error);
-        });
-    });
-}
-
-// --- TEKNİK ASİSTAN VERİ ÇEKME ---
-function loadTechnicalData() {
-    return new Promise((resolve, reject) => {
-        // Veri zaten varsa tekrar çekme
-        if (Object.keys(technicalStepsData).length > 0) {
-            resolve();
-            return;
-        }
-        
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "getTechnicalData" })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.result === "success" && data.steps) {
-                technicalStepsData = data.steps;
-                resolve();
-            } else {
-                technicalStepsData = {};
-                reject(new Error(data.message || "Teknik veri yüklenemedi."));
-            }
-        })
-        .catch(error => {
-            technicalStepsData = {};
             reject(error);
         });
     });
@@ -991,9 +1214,7 @@ function toggleSales(index) {
     }
 }
 
-// =========================================================
-// 5. BÖLÜM: KALİTE YÖNETİMİ
-// =========================================================
+// --- KALİTE FONKSİYONLARI ---
 function populateMonthFilter() {
     const selectEl = document.getElementById('month-select-filter');
     if (!selectEl) return;
@@ -1044,7 +1265,7 @@ function openQualityArea() {
             const agentSelect = document.getElementById('agent-select-admin');
             
             if(groupSelect && agentSelect) {
-                // Grupları Çek
+                // Grupları Çek (Unique)
                 const groups = [...new Set(users.map(u => u.group))].sort();
                 
                 // Grup Seçimini Doldur
@@ -1677,9 +1898,8 @@ async function editEvaluation(targetCallId) {
     }
 }
 
-// =========================================================
-// 6. BÖLÜM: PENALTI OYUNU
-// =========================================================
+// --- PENALTY GAME FUNCTIONS ---
+let pScore=0, pBalls=10, pCurrentQ=null;
 function updateJokerButtons() {
     document.getElementById('joker-call').disabled = jokers.call === 0;
     document.getElementById('joker-half').disabled = jokers.half === 0;
@@ -1913,9 +2133,7 @@ function finishPenaltyGame() {
     });
 }
 
-// =========================================================
-// 7. BÖLÜM: SİHİRBAZLAR (WIZARD & TECHNICAL ASSISTANT)
-// =========================================================
+// --- WIZARD FONKSİYONLARI ---
 function openWizard(){
     document.getElementById('wizard-modal').style.display='flex';
     if (Object.keys(wizardStepsData).length === 0) {
@@ -1960,34 +2178,18 @@ function renderStep(k){
     b.innerHTML = h;
 }
 
-// --- TEKNİK ASİSTAN FONKSİYONLARI ---
+// --- TEKNİK ASİSTAN FONKSİYONLARI (KODA GÖMÜLÜ) ---
 function openTechnicalWizard() {
     document.getElementById('tech-wizard-modal').style.display = 'flex';
-    
-    // Veri daha önce yüklenmemişse yükle
-    if (Object.keys(technicalStepsData).length === 0) {
-        document.getElementById('tech-wizard-body').innerHTML = '<div style="text-align:center; padding:40px; color:#999;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br>Teknik adımlar yükleniyor...</div>';
-        
-        loadTechnicalData().then(() => {
-            // Veri geldiğinde 'start' adımı var mı kontrol et
-            if (technicalStepsData && technicalStepsData['start']) {
-                renderTechnicalStep('start');
-            } else {
-                document.getElementById('tech-wizard-body').innerHTML = '<h3 style="color:red; text-align:center;">Başlangıç adımı (start) bulunamadı.</h3>';
-            }
-        }).catch((err) => {
-            document.getElementById('tech-wizard-body').innerHTML = `<h3 style="color:red; text-align:center;">Veri Hatası: ${err.message}</h3><p style="text-align:center;">Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.</p>`;
-        });
-    } else {
-        renderTechnicalStep('start');
-    }
+    // Veriyi yüklemek yerine direkt renderTechnicalStep ile başlatıyoruz
+    renderTechnicalStep('start');
 }
 
 function renderTechnicalStep(stepId) {
-    const step = technicalStepsData[stepId];
+    // Veriyi global TECHNICAL_STEPS değişkeninden alıyoruz
+    const step = TECHNICAL_STEPS[stepId];
     const container = document.getElementById('tech-wizard-body');
     
-    // Adım bulunamazsa hata göster
     if (!step) {
         container.innerHTML = `<h3 style="color:red; text-align:center;">Hata: "${stepId}" adımı bulunamadı.</h3><div style="text-align:center;"><button class="restart-btn" onclick="renderTechnicalStep('start')">Başa Dön</button></div>`;
         return;
@@ -2022,23 +2224,15 @@ function renderTechnicalStep(stepId) {
             <div class="wizard-options">
         `;
         
-        // Hata Yönetimi: Options kontrolü
         if(step.options && step.options.length > 0) {
             step.options.forEach(opt => {
                 html += `<button class="option-btn" onclick="renderTechnicalStep('${opt.next}')">
                             <i class="fas fa-chevron-right" style="float:right; opacity:0.5;"></i> ${opt.text}
                          </button>`;
             });
-        } else {
-            // Eğer seçenekler boş gelirse
-            html += `<div style="color:red; font-style:italic; text-align:center; padding:20px; border:1px dashed red; background:#fff5f5;">
-                        Bu adım için seçenek bulunamadı.<br>
-                        <small>(E-Tablo'da 'Options' sütununu kontrol ediniz)</small>
-                     </div>`;
         }
         
         html += `</div>`;
-        // 'start' dışındaki adımlarda geri dönüş butonu
         if (stepId !== 'start') {
             html += `<button class="restart-btn" style="background:#eee; color:#333; margin-top:20px;" onclick="renderTechnicalStep('start')">⬅ Başa Dön</button>`;
         }
