@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>S Sport Plus - Pusula</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Lütfen CSS dosyasının aynı dizinde olduğundan emin olun -->
+    <link rel="stylesheet" href="style.css"> 
+    
+    <!-- Gerekli kütüphaneler -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -145,7 +148,7 @@
             <!-- Navigasyon Barı -->
             <div style="background-color: #eaeaea; padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc;">
                 <button id="tw-btn-back" class="btn btn-copy" style="background:#6c757d; color:white; display:none;" onclick="twGoBack()"> ⬅  Önceki Adım</button>
-                <button class="btn btn-copy" style="background:#d32f2f; color:white;" onclick="twResetWizard()"> ↻  Ba ş a D ö n</button>
+                <button class="btn btn-copy" style="background:#d32f2f; color:white;" onclick="twResetWizard()"> ↻  Başa Dön</button>
             </div>
             <!-- İçerik Alanı -->
             <div id="tech-wizard-content" style="padding: 30px; overflow-y: auto; max-height: 60vh;">
@@ -194,94 +197,147 @@
                 <div id="joker-container" style="display: flex; justify-content: space-around; margin: 15px 0;">
                     <button id="joker-call" class="joker-btn" onclick="useJoker('call')" title="Telefon Jokeri">  📞   Telefon</button>
                     <button id="joker-half" class="joker-btn" onclick="useJoker('half')" title="Yarı Yarıya Joker">  ✂️   50:50</button>
-                    <button id="joker-double" class="joker-btn" onclick="useJoker('double')" title="Çift Cevap Hakkı">2️  ⃣    Ç ift Cevap</button>
+                    <button id="joker-double" class="joker-btn" onclick="useJoker('double')" title="Çift Cevap Hakkı">2️  ⃣    Çift Cevap</button>
                 </div>
                 <div class="penalty-options" id="p-options"></div>
                 <button id="p-restart-btn" class="restart-btn" style="display:none; width:100%; background:#fabb00; color:black; font-weight:bold;" onclick="showLobby()">LOBİYE DÖN   🏠  </button>
             </div>
         </div>
     </div>
-    <!-- MODAL: KALİTE YÖNETİM PANELİ (GÜNCELLENMİŞ HALİ) -->
+    <!-- MODAL: KALİTE YÖNETİM PANELİ (TAM SAYFA GÖRÜNÜMÜ) -->
     <div id="quality-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 900px;">
-            <span class="close-modal" onclick="closeModal('quality-modal')">&times;</span>
-            <h2 style="text-align:center; color:var(--primary); margin-bottom: 20px;">Kalite</h2>
+        <div class="quality-modal-content">
+            <div class="quality-modal-header">
+                <h3 id="quality-modal-title">Temsilci Kalite Performans Paneli</h3>
+                <button class="close-modal" onclick="closeQualityModal()"><i class="fas fa-times"></i></button>
+            </div>
             
-            <!-- Admin Kontrolleri (GÜNCELLENDİ) -->
             <div id="admin-quality-controls" style="display:none; margin-bottom:15px;">
                 <div class="quality-controls-top">
                     <div style="display:flex; gap:10px;">
-                        <button class="add-btn" style="background:var(--accent); border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="logEvaluationPopup()"><i class="fas fa-plus"></i> Ekle</button>
-                        <button class="admin-btn" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="exportEvaluations()"><i class="fas fa-file-csv"></i> Rapor</button>
+                        <button class="add-btn" style="background:var(--accent); border:none; color:white; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="logEvaluationPopup()"><i class="fas fa-plus"></i> Değerlendirme Ekle</button>
+                        <button class="admin-btn" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="exportEvaluations()"><i class="fas fa-file-csv"></i> Rapor İndir</button>
                     </div>
-                    <!-- YENİ: Grup ve Temsilci Filtresi -->
-                    <div style="font-weight:bold; display:flex; align-items:center; gap: 15px;">
-                        <div style="display:flex; flex-direction:column;">
-                            <label style="font-size:0.7rem; color:#999; margin-bottom:2px;">Ekip / Grup</label>
-                            <select id="group-select-admin" class="swal2-input" onchange="updateAgentListBasedOnGroup()" style="width: 150px; padding:5px; height:35px; margin:0; border-color:#ccc; font-size:0.85rem;"></select>
+                    <!-- Admin Temsilci Seçimi Alanı -->
+                    <div class="quality-filter-group" style="margin-top: 10px; justify-content: flex-start;">
+                        <div style="display:flex; flex-direction:column; gap: 5px;">
+                            <label style="font-size:0.7rem; color:#0e1b42;">Ekip / Grup</label>
+                            <select id="group-select-admin" class="filter-select" onchange="updateAgentListBasedOnGroup()" style="width: 150px;"></select>
                         </div>
-                        <div style="display:flex; flex-direction:column;">
-                            <label style="font-size:0.7rem; color:#999; margin-bottom:2px;">Temsilci</label>
-                            <select id="agent-select-admin" class="swal2-input" onchange="fetchEvaluationsForAgent()" style="width: 180px; padding:5px; height:35px; margin:0; border-color:#ccc; font-size:0.85rem;"></select>
+                        <div style="display:flex; flex-direction:column; gap: 5px;">
+                            <label style="font-size:0.7rem; color:#0e1b42;">Temsilci</label>
+                            <select id="agent-select-admin" class="filter-select" onchange="fetchEvaluationsForAgent()" style="width: 180px;"></select>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- GÜNCELLENMİŞ KALİTE İÇERİĞİ -->
-            <div id="quality-content" style="padding: 10px; border-radius: 8px;">
-    
-                <!-- ÜST KISIM: BAŞLIK VE FİLTRE -->
-                <div class="q-dashboard-header" style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
-                    <div>
-                        <h3 style="font-size:1.2rem; color:var(--primary); margin:0; font-weight:700;">Kalite Yönetim Paneli</h3>
-                        <p style="font-size:0.8rem; color:#888; margin:2px 0 0 0;">Genel performans özeti</p>
-                    </div>
+
+            <div class="quality-modal-body">
+                <div class="q-tabs">
+                    <button class="q-tab-btn active" onclick="switchQualityTab('overview')"><i class="fas fa-chart-line"></i> Performans Özeti</button>
+                    <button class="q-tab-btn" onclick="switchQualityTab('training')"><i class="fas fa-graduation-cap"></i> Eğitim ve Gelişim</button>
+                    <button class="q-tab-btn" onclick="switchQualityTab('feedback')"><i class="fas fa-comment-dots"></i> Geri Bildirim</button>
+                </div>
+
+                <div id="quality-tab-overview" class="q-tab-content">
                     
-                    <div style="text-align:right;">
-                        <label style="font-size:0.75rem; color:#999; display:block; margin-bottom:2px;">Dönem Seçimi:</label>
-                        <select id="month-select-filter" class="minimal-select" style="font-size:0.9rem; font-weight:bold; color:var(--primary); border:none; border-bottom:1px dashed #ccc; outline:none; background:transparent; cursor:pointer;" onchange="fetchEvaluationsForAgent()">
-                            <!-- JS burayı dolduracak -->
+                    <div class="flex-row mb-20" style="justify-content: flex-end;">
+                        <label for="month-select-filter" style="font-weight: 600;">Dönem:</label>
+                        <select id="month-select-filter" class="filter-select" onchange="fetchEvaluationsForAgent()">
+                            <!-- JS tarafından doldurulur -->
                         </select>
                     </div>
-                </div>
-            
-                <!-- ORTA KISIM: 3'LÜ İSTATİSTİK KARTLARI -->
-                <div class="q-stats-grid">
-                    <div class="q-stat-card card-blue">
-                        <div class="q-card-title">ORTALAMA PUAN</div>
-                        <div class="q-card-value" id="dash-avg-score">-</div>
-                        <div class="q-card-footer">Seçili dönem</div>
-                        <div class="q-card-icon-bg"><i class="fas fa-chart-pie"></i></div>
+
+                    <div class="q-stats-grid">
+                        <div class="q-stat-card" style="border-left: 4px solid var(--info);">
+                            <div class="q-card-title">ORTALAMA PUAN</div>
+                            <div class="q-card-value" id="dash-avg-score">-</div>
+                            <div class="q-card-footer">Ay Bazında Ortalama</div>
+                            <div class="q-card-icon-bg" style="color:var(--info);"><i class="fas fa-star"></i></div>
+                        </div>
+
+                        <div class="q-stat-card" style="border-left: 4px solid var(--primary);">
+                            <div class="q-card-title">ÇAĞRI ADEDİ</div>
+                            <div class="q-card-value" id="dash-eval-count">-</div>
+                            <div class="q-card-footer">Dinlenen Çağrı Sayısı</div>
+                            <div class="q-card-icon-bg" style="color:var(--primary);"><i class="fas fa-headset"></i></div>
+                        </div>
+                        
+                        <div class="q-stat-card" style="border-left: 4px solid var(--success);">
+                            <div class="q-card-title">HEDEF TUTMA</div>
+                            <div class="q-card-value" id="dash-target-rate">-%</div>
+                            <div class="q-card-footer">Hedef: 90+ Puan Üzeri</div>
+                            <div class="q-card-icon-bg" style="color:var(--success);"><i class="fas fa-bullseye"></i></div>
+                        </div>
+
+                        <div class="q-stat-card" style="border-left: 4px solid var(--accent);">
+                            <div class="q-card-title">KRİTİK KIRILIM</div>
+                            <div class="q-card-value" id="dash-negative-notes">0</div>
+                            <div class="q-card-footer">Not girilen adet</div>
+                            <div class="q-card-icon-bg" style="color:var(--accent);"><i class="fas fa-exclamation-triangle"></i></div>
+                        </div>
+
+                        <div class="q-stat-card" style="border-left: 4px solid var(--warning);">
+                            <div class="q-card-title">YENİ BİLDİRİM</div>
+                            <div class="q-card-value" id="dash-feedback-count">0</div>
+                            <div class="q-card-footer">Okunmamış Geri Bildirim</div>
+                            <div class="q-card-icon-bg" style="color:var(--warning);"><i class="fas fa-comments"></i></div>
+                        </div>
                     </div>
-            
-                    <div class="q-stat-card card-green">
-                        <div class="q-card-title">ÇAĞRI ADEDİ</div>
-                        <div class="q-card-value" id="dash-eval-count">-</div>
-                        <div class="q-card-footer">Değerlendirilen</div>
-                        <div class="q-card-icon-bg"><i class="fas fa-check"></i></div>
-                    </div>
-            
-                    <div class="q-stat-card card-orange">
-                        <div class="q-card-title">HEDEF TUTMA</div>
-                        <div class="q-card-value" id="dash-target-rate">-%</div>
-                        <div class="q-card-footer">Hedef: 90+</div>
-                        <div class="q-card-icon-bg"><i class="fas fa-trophy"></i></div>
+
+                    <h4><i class="fas fa-list-alt"></i> Değerlendirme Geçmişi</h4>
+                    <div id="quality-loader" style="text-align:center; color:#999; font-style:italic; display:none; margin:20px 0;">Yükleniyor...</div>
+                    <div id="evaluations-list" style="max-height: 380px; overflow-y: auto; padding-right:5px;">
+                        <!-- JS tarafından doldurulur (fetchEvaluationsForAgent) -->
                     </div>
                 </div>
-                
-                <!-- ALT KISIM: LİSTE BAŞLIĞI VE LİSTE -->
-                <div class="list-section-title" style="font-size:0.85rem; font-weight:700; color:#333; margin:15px 0 10px 0; padding-left:5px; border-left:3px solid #ccc;">
-                    Değerlendirme Geçmişi
+
+                <!-- EĞİTİM VE GELİŞİM SEKMESİ -->
+                <div id="quality-tab-training" class="q-tab-content hidden">
+                    <h3><i class="fas fa-graduation-cap"></i> Eğitim ve Gelişim Atamaları</h3>
+
+                    <div class="q-section-card mb-20">
+                        <h4>Bekleyen/Tamamlanan Eğitimler</h4>
+                        <div id="training-records-list" style="max-height: 350px; overflow-y: auto; padding-right:5px;">
+                            <!-- JS tarafından SIMULATION_TRAININGS ile doldurulur -->
+                        </div>
+                    </div>
+                    
+                    <div class="q-section-card">
+                        <h4><i class="fas fa-chart-line"></i> Eğitim Sonrası Performans Takibi</h4>
+                        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Eğitim sonrası yapılan kalite değerlendirmelerinde elde edilen puanlar.</p>
+                        
+                        <table class="simple-table">
+                            <thead>
+                                <tr><th>Tarih</th><th>Eğitim Konusu</th><th>Puan</th><th>Değerlendiren</th></tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS tarafından doldurulur -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
-                <div id="quality-loader" style="text-align:center; color:#999; font-style:italic; display:none; margin:20px 0;">Yükleniyor...</div>
-            
-                <div id="evaluations-list" style="max-height: 380px; overflow-y: auto; padding-right:5px;"></div>
+
+                <!-- GERİ BİLDİRİM SEKMESİ -->
+                <div id="quality-tab-feedback" class="q-tab-content hidden">
+                    <h3><i class="fas fa-comment-dots"></i> Size Özel Geri Bildirimler</h3>
+                    <p style="font-size: 0.85rem; color: var(--accent); margin-bottom: 15px;">Yeni geri bildirimlerinizi inceledikten sonra okundu olarak işaretlemeyi unutmayın.</p>
+
+                    <div class="q-section-card mb-20">
+                        <h4>Çağrı Geri Bildirim Geçmişi</h4>
+                        <div id="feedback-records-list" style="max-height: 450px; overflow-y: auto; padding-right:5px;">
+                            <!-- JS tarafından SIMULATION_FEEDBACKS ile doldurulur -->
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
     <div class="crafted-by-badge">Crafted by Doğuş Yalçınkaya</div>
-    <script src="js/app.js"></script>
+    
+    <script src="app.js"></script> 
+    
     <script>
         function toggleUserDropdown() {
             const dropdown = document.getElementById('userDropdown');
