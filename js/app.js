@@ -842,7 +842,7 @@ async function editSport(title) {
             <input id="swal-tip" class="swal2-input" style="width:100%; margin-bottom:10px;" value="${s.tip || ''}">
             <label style="font-weight:bold;">Detay (Alt Metin)</label>
             <textarea id="swal-detail" class="swal2-textarea" style="margin-bottom:10px;">${s.detail || ''}</textarea>
-            <label style="font-weight:bold;">Okunuş</label>
+            <label style="font-weight:bold;">Okunuşu</label>
             <input id="swal-pron" class="swal2-input" style="width:100%; margin-bottom:10px;" value="${s.pronunciation || ''}">
             <label style="font-weight:bold;">İkon Sınıfı</label>
             <input id="swal-icon" class="swal2-input" style="width:100%;" value="${s.icon || ''}">
