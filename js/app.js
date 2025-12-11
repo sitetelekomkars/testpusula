@@ -732,7 +732,6 @@ function openQualityArea() {
     if(dashTarget) dashTarget.innerText = "-%";
     const monthSelect = document.getElementById('month-select-filter');
     if (monthSelect) {
-        // Olay dinleyicisini yenilemek için element klonlanır
         const newMonthSelect = monthSelect.cloneNode(true);
         monthSelect.parentNode.replaceChild(newMonthSelect, monthSelect);
         newMonthSelect.addEventListener('change', function() {
@@ -783,28 +782,17 @@ function updateAgentListBasedOnGroup() {
     const agentSelect = document.getElementById('agent-select-admin');
     if(!groupSelect || !agentSelect) return;
     const selectedGroup = groupSelect.value;
-    
-    // Mevcut listeyi temizle
     agentSelect.innerHTML = '';
     
     let filteredUsers = adminUserList;
-    
     if (selectedGroup !== 'all') {
         filteredUsers = adminUserList.filter(u => u.group === selectedGroup);
-        // O grubun tamamını seçme seçeneği ekle
         agentSelect.innerHTML = `<option value="all">-- Tüm ${selectedGroup} Ekibi --</option>`;
     } else {
-        // Tüm gruplar seçiliyse, tüm temsilciler seçeneği
         agentSelect.innerHTML = `<option value="all">-- Tüm Temsilciler --</option>`;
     }
-    
-    // Kullanıcıları ekle
-    filteredUsers.forEach(u => {
-        agentSelect.innerHTML += `<option value="${u.name}">${u.name}</option>`;
-    });
-    
-    // Listeyi güncelledikten sonra otomatik veri çek
-    fetchEvaluationsForAgent(); 
+    filteredUsers.forEach(u => { agentSelect.innerHTML += `<option value="${u.name}">${u.name}</option>`; });
+    fetchEvaluationsForAgent();
 }
 function hubAgentChanged() { 
     fetchEvaluationsForAgent();
@@ -1863,7 +1851,7 @@ function twResetWizard() {
     twRenderStep();
 }
 // --- MANUEL FEEDBACK (HIZLI LOG) ---
-async function saveManualFeedback() {
+function saveManualFeedback() {
     const agentSelect = document.getElementById('agent-select-admin');
     const title = document.getElementById('mf-title').value;
     const date = document.getElementById('mf-date').value;
@@ -2005,6 +1993,56 @@ function completeEducation(eduId) {
                     loadEducationData();
                 }
             });
+        }
+    });
+}
+// --- BİLDİRİM KONTROLÜ ---
+function checkNewFeedbacks() {
+    const agentName = localStorage.getItem("sSportUser");
+    if (!agentName || isAdminMode) return; 
+    
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "checkNotifications", username: agentName })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.result === "success" && data.hasFeedback) {
+            const lastSeenId = localStorage.getItem('lastSeenFeedbackId');
+            
+            if (lastSeenId !== String(data.id)) {
+                let iconType = 'info';
+                let titleColor = '#0e1b42';
+                
+                if (data.score === 0 || data.score < 70) { iconType = 'warning'; titleColor = '#d32f2f'; }
+                else if (data.score >= 100) { iconType = 'success'; titleColor = '#2e7d32'; }
+                else if (data.score >= 70 && data.score < 100) { iconType = 'info'; titleColor = '#ed6c02'; }
+                
+                Swal.fire({
+                    title: `<span style="color:${titleColor}">🔔 Yeni Geri Bildirim!</span>`,
+                    html: `
+                        <div style="text-align:left; font-size:0.95rem; line-height:1.6;">
+                            <p><strong>Tarih:</strong> ${data.date}</p>
+                            <p><strong>Tür:</strong> ${data.type}</p>
+                            <p><strong>Puan:</strong> <span style="font-weight:bold; font-size:1.1rem; color:${titleColor}">${data.score}</span></p>
+                            <div style="background:#f8f9fa; padding:15px; border-left:5px solid ${titleColor}; border-radius:4px; margin-top:10px; font-style:italic; color:#555; white-space: pre-wrap;">
+                                "${data.feedback}"
+                            </div>
+                        </div>
+                    `,
+                    icon: iconType,
+                    confirmButtonText: 'Okudum, Anlaşıldı',
+                    confirmButtonColor: titleColor,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    backdrop: `rgba(0,0,123,0.4)`
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        localStorage.setItem('lastSeenFeedbackId', data.id);
+                    }
+                });
+            }
         }
     });
 }
