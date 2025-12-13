@@ -655,3 +655,52 @@ body.editing .edit-icon { display: block !important; }
 .add-manual-feedback-btn:hover {
     background: #e0a800;
 }
+
+/* YENİ MODAL STİLLERİ (Manuel Geri Bildirim ve Eğitim Modal Destek) */
+.swal2-container-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.swal2-select-full {
+    margin-bottom: 10px !important;
+    height: 40px !important;
+    font-size: 1rem !important;
+}
+
+.swal2-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.swal2-input-half {
+    flex: 1;
+    margin: 0 !important;
+    height: 40px !important;
+    font-size: 1rem !important;
+    box-sizing: border-box;
+}
+
+.swal2-input-full, .swal2-textarea-full {
+    width: 100% !important;
+    margin: 0 !important;
+    font-size: 1rem !important;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.swal2-textarea-full {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.swal2-input, .swal2-textarea, .swal2-select {
+    border: 1px solid #ccc !important;
+    border-radius: 5px !important;
+}
