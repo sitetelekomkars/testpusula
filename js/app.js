@@ -1058,7 +1058,8 @@ function openQualityArea() {
     if(oldModal) oldModal.style.display = 'none';
     // Tam ekranı aç
     const fullScreen = document.getElementById('quality-fullscreen');
-    fullScreen.style.display = 'flex';
+    // BURADAKİ HATA DÜZELTİLDİ: CSS'te #quality-fullscreen display:none olduğu için burayı flex yaptık
+    fullScreen.style.display = 'flex'; 
     // Kullanıcı bilgisini güncelle
     document.getElementById('q-side-name').innerText = currentUser;
     document.getElementById('q-side-role').innerText = isAdminMode ? 'Yönetici' : 'Temsilci';
@@ -1524,8 +1525,9 @@ function loadFeedbackList() {
     
     // YENİ FİLTRELEME MANTIĞI: Sadece feedbackType 'Mail' olanlar VEYA callId 'MANUEL' ile başlayanlar listelenir.
     const feedbackItems = allEvaluationsData.filter(e => {
+        // Not: Normal Call Center/Chat değerlendirmeleri puanlandığı için score:100 filtrelemesi yapılmaz.
         const isMailFeedback = e.feedbackType && e.feedbackType.toLowerCase() === 'mail';
-        const isManualFeedback = e.callId && String(e.callId).toUpperCase().startsWith('MANUEL');
+        const isManualFeedback = e.callId && String(e.callId).toUpperCase().startsWith('MANUAL'); // MANUAL olarak loglanıyor
         
         return isMailFeedback || isManualFeedback;
     });
@@ -1537,7 +1539,7 @@ function loadFeedbackList() {
     
     feedbackItems.forEach(e => {
         // Geliştirme: Çağrı Tarihi ve ID eklendi (Gelişmiş Kart Tasarımı)
-        const feedbackClass = e.feedbackType === 'Sözlü' ? '#2196f3' : (e.feedbackType && e.feedbackType.toLowerCase() === 'mail' ? '#e65100' : '#10b981');
+        const feedbackClass = e.feedbackType && e.feedbackType.toLowerCase() === 'mail' ? '#e65100' : (e.callId && String(e.callId).toUpperCase().startsWith('MANUAL') ? '#1976d2' : '#10b981');
         
         listEl.innerHTML += `
             <div class="feedback-card" style="border-left-color: ${feedbackClass};">
@@ -1628,7 +1630,7 @@ async function addManualFeedbackPopup() {
 
             return {
                 agentName,
-                // Eğer Call ID girilmediyse, Konu/Başlık kullanarak MANUEL bir ID oluştur.
+                // Eğer Call ID girilmediyse, Konu/Başlık kullanarak MANUAL bir ID oluştur.
                 callId: (callId === 'N/A' && topic) ? `MANUAL-${topic.substring(0, 5).toUpperCase()}` : (callId === 'N/A' ? 'MANUAL-GENEL' : callId),
                 callDate: formattedDate,
                 score: 100, // Manuel olduğu için tam puan
