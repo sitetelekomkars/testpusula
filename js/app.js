@@ -22,6 +22,8 @@ let wizardStepsData = {};
 let trainingData = [];
 // YENİ: Chart instance'ı tutmak için
 let dashboardChart = null;
+// YENİ: Feedback Log Verisi (Manuel kayıt detayları için)
+let feedbackLogsData = [];
 // ==========================================================
 // --- KALİTE PUANLAMA LOGİĞİ: CHAT (BUTON TABANLI) ---
 // ==========================================================
@@ -596,11 +598,6 @@ async function addNewCardPopup() {
         </div>`,
         width: '700px', showCancelButton: true, confirmButtonText: '<i class="fas fa-plus"></i> Ekle', cancelButtonText: 'İptal', focusConfirm: false,
         didOpen: () => {
-            const selectEl = document.getElementById('swal-new-cat');
-            const cardEl = document.getElementById('preview-card');
-            selectEl.style.margin = "0"; selectEl.style.height = "30px"; selectEl.style.fontSize = "0.8rem"; selectEl.style.padding = "0 5px";
-            selectEl.addEventListener('change', function() { cardEl.className = 'card ' + this.value; });
-            
             window.toggleAddFields = function() {
                 const type = document.getElementById('swal-type-select').value;
                 const catCont = document.getElementById('cat-container');
@@ -639,6 +636,10 @@ async function addNewCardPopup() {
                     cardPreview.style.borderLeft = "5px solid var(--quiz)";
                 }
             };
+            const selectEl = document.getElementById('swal-new-cat');
+            const cardEl = document.getElementById('preview-card');
+            selectEl.style.margin = "0"; selectEl.style.height = "30px"; selectEl.style.fontSize = "0.8rem"; selectEl.style.padding = "0 5px";
+            selectEl.addEventListener('change', function() { cardEl.className = 'card ' + this.value; });
         },
         preConfirm: () => {
             const type = document.getElementById('swal-type-select').value;
@@ -1133,7 +1134,14 @@ function switchQualityTab(tabName, element) {
     // Veri Yükleme
     if (tabName === 'dashboard') loadQualityDashboard();
     else if (tabName === 'evaluations') fetchEvaluationsForAgent();
-    else if (tabName === 'feedback') loadFeedbackList();
+    // DÜZELTME: Feedback sekmesi açılırken önce Feedback_Logs çekilmeli
+    else if (tabName === 'feedback') {
+        fetchEvaluationsForAgent(null, true).then(() => {
+            fetchFeedbackLogs().then(() => {
+                loadFeedbackList();
+            });
+        });
+    }
     else if (tabName === 'training') loadTrainingData();
 }
 // --- DASHBOARD FONKSİYONLARI ---
@@ -1516,6 +1524,27 @@ async function assignTrainingPopup() {
     }
 }
 // --- FEEDBACK MODÜLÜ ---
+
+// YENİ FONKSİYON: Feedback_Logs'u çekmek için
+async function fetchFeedbackLogs() {
+    try {
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "fetchFeedbackLogs", username: currentUser, token: getToken() })
+        });
+        const data = await res.json();
+        if (data.result === "success") {
+            feedbackLogsData = data.feedbackLogs || [];
+        } else {
+            feedbackLogsData = [];
+        }
+    } catch (error) {
+        console.error("Feedback Logs çekilirken hata oluştu:", error);
+        feedbackLogsData = [];
+    }
+}
+
 function loadFeedbackList() {
     const listEl = document.getElementById('feedback-list');
     listEl.innerHTML = '';
@@ -1534,7 +1563,7 @@ function loadFeedbackList() {
         return isMailFeedback || isManualFeedback;
     });
     if(feedbackItems.length === 0) {
-        listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">geri bildirim yok .</div>';
+        listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#888;">Görüntülenecek geri bildirim yok .</div>';
         return;
     }
     
@@ -1550,15 +1579,22 @@ function loadFeedbackList() {
         const isEvaluationDetail = String(e.details).startsWith('[');
         const feedbackTopic = isEvaluationDetail ? 'Değerlendirme Konusu' : (e.details || 'Belirtilmemiş');
         
-        // Dönem, Kanal ve Tipi belirle (Manuel kayıtlarda bu bilgileri ekliyoruz)
+        // Dönem, Kanal ve Tipi belirle (Manuel kayıtlarda bu bilgileri Evaluations'tan değil, Feedback_Logs'tan çekiyoruz)
         const isManual = String(e.callId).toUpperCase().startsWith('MANUEL-');
         
-        // HATA ÇÖZÜMÜ: Kanal bilgisini daha savunmacı bir şekilde çekme ve boşlukları temizleme
-        const rawChannel = e.channel;
-        const channel = (rawChannel && String(rawChannel).trim()) ? String(rawChannel).trim() : 'Yok'; // Düzeltme yapıldı.
-        
-        const period = e.period || e.date.substring(3); // Eğer period yoksa tarihten al (manuel kayıtlar için gelmesi beklenir)
+        let period = e.period || e.date.substring(3);
+        let channel = (e.channel && String(e.channel).trim()) ? String(e.channel).trim() : 'Yok';
         const infoType = e.feedbackType || 'Yok';
+
+        // DÜZELTME MANTIĞI: Eğer kayıt Manuel ise, detaylı bilgiyi feedbackLogsData'dan çek.
+        if (isManual) {
+            const logRow = feedbackLogsData.find(x => String(x.callId) === String(cleanCallId));
+            if (logRow) {
+                // Not: logRow.period ve logRow.channel zaten Apps Script'te string olarak temizleniyor (row[X] || 'N/A')
+                period = logRow.period && logRow.period !== 'N/A' ? logRow.period : period;
+                channel = logRow.channel && logRow.channel !== 'N/A' ? logRow.channel : 'Yok';
+            }
+        }
         
         listEl.innerHTML += `
             <div class="feedback-card" style="border-left-color: ${feedbackClass};">
@@ -1775,16 +1811,17 @@ async function addManualFeedbackPopup() {
         .then(r => r.json()).then(d => {
             if (d.result === "success") { 
                 Swal.fire({ icon: 'success', title: 'Kaydedildi', timer: 1500, showConfirmButton: false });
-                // Tüm değerlendirmeleri tekrar çek ki yeni feedback listeye eklensin
+                // DÜZELTME: Hem evaluations hem de feedback logs güncellenmeli
                 fetchEvaluationsForAgent(formValues.agentName);
-                loadFeedbackList(); // Feedback listesini yenile
+                fetchFeedbackLogs().then(() => {
+                    loadFeedbackList();
+                });
             } else { 
                 Swal.fire('Hata', d.message, 'error'); 
             }
         });
     }
 }
-// --- EVALUATION LOGIC ---
 async function fetchEvaluationsForAgent(forcedName, silent=false) {
     const listEl = document.getElementById('evaluations-list');
     if(!silent) listEl.innerHTML = 'Yükleniyor...';
@@ -2037,8 +2074,16 @@ async function logEvaluationPopup() {
             body: JSON.stringify({ action: "logEvaluation", username: currentUser, token: getToken(), ...formValues }) 
         })
         .then(r => r.json()).then(d => {
-            if (d.result === "success") { Swal.fire({ icon: 'success', title: 'Kaydedildi', timer: 1500, showConfirmButton: false }); fetchEvaluationsForAgent(formValues.agentName); } 
-            else { Swal.fire('Hata', d.message, 'error'); }
+            if (d.result === "success") { 
+                Swal.fire({ icon: 'success', title: 'Kaydedildi', timer: 1500, showConfirmButton: false });
+                // DÜZELTME: Hem evaluations hem de feedback logs güncellenmeli
+                fetchEvaluationsForAgent(formValues.agentName);
+                fetchFeedbackLogs().then(() => {
+                    loadFeedbackList();
+                });
+            } else { 
+                Swal.fire('Hata', d.message, 'error'); 
+            }
         });
     }
 }
@@ -2117,7 +2162,14 @@ async function editEvaluation(targetCallId) {
             body: JSON.stringify({ action: "updateEvaluation", username: currentUser, token: getToken(), ...formValues }) 
         })
         .then(r => r.json()).then(d => {
-            if (d.result === "success") { Swal.fire({ icon: 'success', title: 'Güncellendi', timer: 1500, showConfirmButton: false }); fetchEvaluationsForAgent(agentName); } 
+            if (d.result === "success") { 
+                Swal.fire({ icon: 'success', title: 'Güncellendi', timer: 1500, showConfirmButton: false }); 
+                // DÜZELTME: Güncelleme sonrası hem evaluations hem de feedback logs güncellenmeli
+                fetchEvaluationsForAgent(agentName);
+                fetchFeedbackLogs().then(() => {
+                    loadFeedbackList();
+                });
+            } 
             else { Swal.fire('Hata', d.message, 'error'); }
         });
     }
