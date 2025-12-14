@@ -885,58 +885,6 @@ body.editing .edit-icon { display: block !important; }
   padding-left:2px;
   display:none;
 }
-.featured-bar{
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  border: 1px solid #eaedf2;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-}
-.featured-left{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  min-width:260px;
-}
-.featured-title{
-  font-weight:800;
-  color: var(--primary);
-  letter-spacing:0.2px;
-}
-.featured-sub{
-  font-size:0.85rem;
-  color:#667;
-}
-.featured-right{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-.fchip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border:1px solid #eef1f6;
-  background:#fff;
-  border-radius:999px;
-  font-size:0.82rem;
-  color:#344;
-}
-.fchip b{color: var(--primary);}
-.fchip .dot{
-  width:8px;height:8px;border-radius:50%;
-  background: var(--secondary);
-  box-shadow: 0 0 0 3px rgba(250,187,0,0.18);
-}
-
 /* --- Oyun Merkezi --- */
 .game-hub-grid{
   display:grid;
