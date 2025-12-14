@@ -134,8 +134,15 @@ function toggleFavorite(title) {
     if (favs.includes(title)) { favs = favs.filter(t => t !== title); } 
     else { favs.push(title); }
     localStorage.setItem('sSportFavs', JSON.stringify(favs));
+    try {
+        const added = favs.includes(title);
+        Swal.fire({toast:true, position:'top-end', icon: added ? 'success' : 'info', title: added ? 'Favorilere eklendi' : 'Favorilerden kaldırıldı', showConfirmButton:false, timer:1200});
+    } catch(e) {}
+
     if (currentCategory === 'fav') { filterCategory(document.querySelector('.btn-fav'), 'fav'); } 
     else { renderCards(activeCards); }
+    try { renderFeaturedBar(); } catch(e) {}
+    try { updateSearchResultCount(activeCards.length || 0, database.length); } catch(e) {}
 }
 function isFav(title) { return getFavs().includes(title); }
 function formatDateToDDMMYYYY(dateString) {
@@ -426,6 +433,8 @@ function loadContentData() {
             if(currentCategory === 'fav') { filterCategory(document.querySelector('.btn-fav'), 'fav'); } 
             else { activeCards = database; renderCards(database); }
             startTicker();
+            try { renderFeaturedBar(); } catch(e) {}
+            try { updateSearchResultCount(activeCards.length || database.length, database.length); } catch(e) {}
         } else { document.getElementById('loading').innerHTML = `Veriler alınamadı: ${data.message || 'Bilinmeyen Hata'}`; }
     }).catch(error => { document.getElementById('loading').innerHTML = 'Bağlantı Hatası! Sunucuya ulaşılamıyor.'; });
 }
@@ -488,6 +497,57 @@ function highlightText(htmlContent) {
     if (!searchTerm) return htmlContent;
     try { const regex = new RegExp(`(${searchTerm})`, "gi"); return htmlContent.toString().replace(regex, '<span class="highlight">$1</span>'); } catch(e) { return htmlContent; }
 }
+
+function updateSearchResultCount(count, total) {
+    const el = document.getElementById('searchResultCount');
+    if(!el) return;
+    // sadece arama yazıldığında veya filtre fav/tekil seçildiğinde göster
+    const search = (document.getElementById('searchInput')?.value || '').trim();
+    const show = !!search || (currentCategory && currentCategory !== 'all');
+    if(!show) { el.style.display = 'none'; el.innerText = ''; return; }
+    el.style.display = 'block';
+    el.innerText = `🔎 ${count} sonuç${total != null ? ' / ' + total : ''}`;
+}
+
+function renderFeaturedBar() {
+    const bar = document.getElementById('featured-bar');
+    if(!bar) return;
+
+    // Yeni içerikler: tarih alanı dd.MM.yyyy ise sıralama için parse et
+    const parseTR = (s) => {
+        try {
+            if(!s) return 0;
+            const clean = String(s).split(' ')[0];
+            if(clean.includes('.')) {
+                const [dd,mm,yy] = clean.split('.');
+                const d = new Date(parseInt(yy), parseInt(mm)-1, parseInt(dd));
+                return d.getTime() || 0;
+            }
+            const d = new Date(s);
+            return d.getTime() || 0;
+        } catch(e){ return 0; }
+    };
+
+    const total = database.length;
+    const favCount = getFavs().length;
+    const newest = [...database].sort((a,b) => parseTR(b.date) - parseTR(a.date)).slice(0,3);
+    const newestTitles = newest.map(x => x.title).filter(Boolean).join(' • ');
+
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <div class="featured-left">
+        <div class="featured-title">Bugün Öne Çıkanlar</div>
+        <div class="featured-sub">${newestTitles || 'İçerikler yükleniyor...'}</div>
+      </div>
+      <div class="featured-right">
+        <div class="fchip"><span class="dot"></span> Toplam: <b>${total}</b></div>
+        <div class="fchip">⭐ Favori: <b>${favCount}</b></div>
+        <div class="fchip">🆕 Yeni (3 gün): <b>${database.filter(x => isNew(x.date)).length}</b></div>
+      </div>
+    `;
+}
+
+
 function filterCategory(btn, cat) {
     currentCategory = cat;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -510,6 +570,7 @@ function filterContent() {
         });
     }
     activeCards = filtered;
+    updateSearchResultCount(filtered.length, database.length);
     renderCards(filtered);
 }
 function showCardDetail(title, text) {
@@ -1184,7 +1245,214 @@ function useJoker(type) {
     }
 }
 
+
+function openGameHub() {
+    document.getElementById('game-hub-modal').style.display = 'flex';
+}
+
+function openQuickDecisionGame() {
+    try { closeModal('game-hub-modal'); } catch(e) {}
+    document.getElementById('quick-modal').style.display = 'flex';
+
+    // Lobby ekranı
+    const lobby = document.getElementById('qd-lobby');
+    const game = document.getElementById('qd-game');
+    if (lobby) lobby.style.display = 'block';
+    if (game) game.style.display = 'none';
+
+    // Reset göstergeler
+    const t = document.getElementById('qd-time'); if (t) t.innerText = '30';
+    const s = document.getElementById('qd-score'); if (s) s.innerText = '0';
+    const st = document.getElementById('qd-step'); if (st) st.innerText = '0';
+}
+
+// --- HIZLI KARAR OYUNU ---
+let qdTimer = null;
+let qdTimeLeft = 30;
+let qdScore = 0;
+let qdStep = 0;
+let qdQueue = [];
+
+const QUICK_DECISION_BANK = [
+  {
+    q: 'Müşteri: "Fiyat pahalı, iptal edeceğim." İlk yaklaşımın ne olmalı?',
+    opts: [
+      'Hemen iptal işlemini başlatalım.',
+      'Haklısınız, sizi anlıyorum. Paket/avantajlara göre alternatif sunayım mı?',
+      'Kampanya yok, yapacak bir şey yok.'
+    ],
+    a: 1,
+    exp: 'Empati + ihtiyaç analizi itirazı yumuşatır ve iknayı artırır.'
+  },
+  {
+    q: 'Müşteri: "Uygulama açılmıyor." En hızlı ilk kontrol ne?',
+    opts: [
+      'Şifreyi sıfırlat.',
+      'İnternet bağlantısı / VPN / DNS kontrolü yaptır.',
+      'Hemen cihazı fabrika ayarlarına döndür.'
+    ],
+    a: 1,
+    exp: 'Önce kök nedeni daralt: bağlantı mı uygulama mı? Büyük adımları sona bırak.'
+  },
+  {
+    q: 'Müşteri: "Yayın donuyor." Teknikte doğru soru hangisi?',
+    opts: [
+      'Hangi cihazda (TV/telefon) ve hangi ağda (Wi‑Fi/kablo) oluyor?',
+      'Kaç gündür böyle?',
+      'Şimdi kapatıp açın.'
+    ],
+    a: 0,
+    exp: 'Cihaz + ağ bilgisi, sorunu hızlı izole etmeyi sağlar.'
+  },
+  {
+    q: 'Müşteri: "İade istiyorum." En doğru yönlendirme?',
+    opts: [
+      'Hemen kapatalım.',
+      'İade koşulları ve adımları net anlat, doğru kanala yönlendir (asistan/rehber).',
+      'Tekrar arayın.'
+    ],
+    a: 1,
+    exp: 'Net süreç + doğru kanal = memnuniyet + tekrar aramayı azaltır.'
+  },
+  {
+    q: 'Müşteri: "Kampanyadan yararlanamıyorum." İlk adım?',
+    opts: [
+      'Kampanya koşulları (tarih/paket/cihaz) uygun mu kontrol et.',
+      'Direkt kampanyayı tanımla.',
+      'Sorun yok deyip kapat.'
+    ],
+    a: 0,
+    exp: 'Uygunluk kontrolü yapılmadan işlem yapmak hataya sürükler.'
+  },
+  {
+    q: 'Müşteri sinirli: "Kimse çözmedi!" Ne yaparsın?',
+    opts: [
+      'Sakinleştirici bir cümle + özet + net aksiyon planı.',
+      'Sıraya alalım.',
+      'Ses yükselt.'
+    ],
+    a: 0,
+    exp: 'Kontrolü geri almak için empati + özet + plan üçlüsü çalışır.'
+  }
+];
+
+function resetQuickDecision() {
+    if (qdTimer) { clearInterval(qdTimer); qdTimer = null; }
+    qdTimeLeft = 30; qdScore = 0; qdStep = 0; qdQueue = [];
+    openQuickDecisionGame();
+}
+
+function startQuickDecision() {
+    // 5 soru çek
+    const idxs = Array.from({length: QUICK_DECISION_BANK.length}, (_,i)=>i).sort(()=>Math.random()-0.5).slice(0,5);
+    qdQueue = idxs.map(i => QUICK_DECISION_BANK[i]);
+    qdTimeLeft = 30;
+    qdScore = 0;
+    qdStep = 0;
+
+    const lobby = document.getElementById('qd-lobby');
+    const game = document.getElementById('qd-game');
+    if (lobby) lobby.style.display = 'none';
+    if (game) game.style.display = 'block';
+
+    updateQuickHud();
+    renderQuickQuestion();
+
+    if (qdTimer) clearInterval(qdTimer);
+    qdTimer = setInterval(() => {
+        qdTimeLeft -= 1;
+        updateQuickHud();
+        if (qdTimeLeft <= 0) {
+            finishQuickDecision(true);
+        }
+    }, 1000);
+}
+
+function updateQuickHud() {
+    const t = document.getElementById('qd-time'); if (t) t.innerText = String(Math.max(0, qdTimeLeft));
+    const s = document.getElementById('qd-score'); if (s) s.innerText = String(qdScore);
+    const st = document.getElementById('qd-step'); if (st) st.innerText = String(qdStep);
+}
+
+function renderQuickQuestion() {
+    const q = qdQueue[qdStep];
+    const qEl = document.getElementById('qd-question');
+    const optEl = document.getElementById('qd-options');
+    if (!qEl || !optEl || !q) return;
+
+    qEl.innerText = q.q;
+    optEl.innerHTML = '';
+
+    q.opts.forEach((txt, i) => {
+        const b = document.createElement('button');
+        b.className = 'quick-opt';
+        b.innerText = txt;
+        b.onclick = () => answerQuick(i);
+        optEl.appendChild(b);
+    });
+}
+
+function answerQuick(idx) {
+    const q = qdQueue[qdStep];
+    const optEl = document.getElementById('qd-options');
+    if (!q || !optEl) return;
+
+    const btns = Array.from(optEl.querySelectorAll('button'));
+    btns.forEach(b => b.disabled = true);
+
+    const correct = (idx === q.a);
+
+    if (btns[idx]) btns[idx].classList.add(correct ? 'good' : 'bad');
+    if (!correct && btns[q.a]) btns[q.a].classList.add('good');
+
+    // puanlama: doğru +2, yanlış -1
+    qdScore += correct ? 2 : -1;
+    if (qdScore < 0) qdScore = 0;
+    updateQuickHud();
+
+    Swal.fire({
+        toast: true,
+        position: 'top',
+        icon: correct ? 'success' : 'warning',
+        title: correct ? 'Doğru seçim!' : 'Yanlış seçim',
+        text: q.exp,
+        showConfirmButton: false,
+        timer: 1800
+    });
+
+    setTimeout(() => {
+        qdStep += 1;
+        updateQuickHud();
+        if (qdStep >= qdQueue.length) finishQuickDecision(false);
+        else renderQuickQuestion();
+    }, 650);
+}
+
+function finishQuickDecision(timeout) {
+    if (qdTimer) { clearInterval(qdTimer); qdTimer = null; }
+
+    const msg = timeout ? 'Süre bitti!' : 'Bitti!';
+    Swal.fire({
+        icon: 'info',
+        title: `🧠 Hızlı Karar ${msg}`,
+        html: `<div style="text-align:center;">
+                <div style="font-size:1.0rem; margin-bottom:8px;">Skorun: <b>${qdScore}</b></div>
+                <div style="color:#666; font-size:0.9rem;">İstersen yeniden başlatıp rekor deneyebilirsin.</div>
+              </div>`,
+        confirmButtonText: 'Tamam'
+    });
+
+    // Lobby'e dön
+    const lobby = document.getElementById('qd-lobby');
+    const game = document.getElementById('qd-game');
+    if (lobby) lobby.style.display = 'block';
+    if (game) game.style.display = 'none';
+    const t = document.getElementById('qd-time'); if (t) t.innerText = '30';
+    const st = document.getElementById('qd-step'); if (st) st.innerText = '0';
+}
+
 function openPenaltyGame() {
+    try { closeModal('game-hub-modal'); } catch(e) {}
     document.getElementById('penalty-modal').style.display = 'flex';
     showLobby();
 }
