@@ -993,8 +993,7 @@ async function openBroadcastFlow() {
     renderSection("Geçmiş", pastByDate, "Geçmiş yayın bulunamadı.");
 
       html += `</div>`;
-    });
-
+   
     html += `</div>`;
 
     Swal.fire({
