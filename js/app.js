@@ -1507,11 +1507,8 @@ function switchQualityTab(tabName, element) {
     else if (tabName === 'evaluations') fetchEvaluationsForAgent();
     // DÜZELTME: Feedback sekmesi açılırken önce Feedback_Logs çekilmeli
     else if (tabName === 'feedback') {
-        fetchEvaluationsForDashboard().then(() => {
-            fetchFeedbackLogs().then(() => {
-                loadFeedbackList();
-            });
-        });
+        populateFeedbackFilters();
+        refreshFeedbackData();
     }
     else if (tabName === 'training') loadTrainingData();
 }
@@ -1585,6 +1582,108 @@ function updateDashAgentList() {
     updateDashRingTitle();
     refreshQualityData();
 }
+
+// ✅ YENİ: Feedback (Geri Bildirimler) Filtrelerini Doldurma
+function populateFeedbackFilters() {
+    const groupSelect = document.getElementById('q-feedback-group');
+    const agentSelect = document.getElementById('q-feedback-agent');
+    if (!groupSelect || !agentSelect) return;
+
+    if(!isAdminMode) {
+        groupSelect.style.display = 'none';
+        agentSelect.style.display = 'none';
+        return;
+    } else {
+        groupSelect.style.display = 'block';
+        agentSelect.style.display = 'block';
+    }
+
+    const groups = [...new Set(adminUserList.map(u => u.group).filter(g => g))].sort();
+    groupSelect.innerHTML = '<option value="all">Tüm Gruplar</option>';
+    groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        groupSelect.appendChild(opt);
+    });
+
+    // İlk yüklemede tüm agentları listele
+    updateFeedbackAgentList(false);
+}
+
+function updateFeedbackAgentList(shouldRefresh=true) {
+    const groupSelect = document.getElementById('q-feedback-group');
+    const agentSelect = document.getElementById('q-feedback-agent');
+    if(!groupSelect || !agentSelect) return;
+
+    const selectedGroup = groupSelect.value;
+
+    // seçilen gruba göre kullanıcıları filtrele
+    const filteredUsers = adminUserList.filter(u => {
+        if(!u || !u.username) return false;
+        if(selectedGroup === 'all') return true;
+        return u.group === selectedGroup;
+    });
+
+    const agents = filteredUsers
+        .map(u => u.username)
+        .filter(a => a)
+        .sort((a,b) => a.localeCompare(b, 'tr'));
+
+    agentSelect.innerHTML = '<option value="all">Tüm Temsilciler</option>';
+    agents.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        agentSelect.appendChild(opt);
+    });
+
+    if(shouldRefresh) refreshFeedbackData();
+}
+
+async function fetchEvaluationsForFeedback() {
+    const groupSelect = document.getElementById('q-feedback-group');
+    const agentSelect = document.getElementById('q-feedback-agent');
+
+    let targetAgent = currentUser;
+    let targetGroup = 'all';
+
+    if (isAdminMode) {
+        targetAgent = agentSelect ? agentSelect.value : 'all';
+        targetGroup = groupSelect ? groupSelect.value : 'all';
+    }
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'fetchEvaluations',
+                targetAgent: targetAgent,
+                targetGroup: targetGroup,
+                username: currentUser,
+                token: getToken()
+            })
+        });
+        const data = await response.json();
+        if (data.result === "success") {
+            allEvaluationsData = (data.evaluations || []).reverse();
+        } else {
+            allEvaluationsData = [];
+        }
+    } catch (e) {
+        allEvaluationsData = [];
+    }
+}
+
+async function refreshFeedbackData() {
+    // Feedback ekranı için (admin filtrelerine göre) değerlendirmeleri + logları çek, sonra listeyi bas
+    await fetchEvaluationsForFeedback();
+    await fetchFeedbackLogs();
+    loadFeedbackList();
+}
+
+
 function refreshQualityData() {
     loadQualityDashboard();
 }
