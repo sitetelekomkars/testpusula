@@ -17,7 +17,7 @@ body {
     font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif; 
     background-color: var(--bg); 
     color: var(--text-dark);
-    user-select: text; 
+    user-select: none; 
     overflow-x: hidden;
 }
 /* --- LOGIN SCREEN --- */
@@ -984,59 +984,3 @@ body.editing .edit-icon { display: block !important; }
   gap:10px;
   flex-wrap:wrap;
 }
-
-
-/* --- SELECTION CONTROL --- */
-.no-select, .no-select * { user-select: none; }
-.btn, .filter-btn, .user-btn, .dropdown-menu, .news-ticker-box { user-select: none; }
-
-/* --- DUELLO ARENA --- */
-.duel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 14px;
-}
-@media (max-width: 900px) { .duel-grid { grid-template-columns: 1fr; } }
-.duel-panel {
-  border: 1px solid #eaedf2;
-  border-radius: 8px;
-  padding: 14px;
-  background: #fff;
-}
-.duel-panel h3 { margin: 0 0 10px 0; font-size: 1.0rem; color: var(--primary); }
-.duel-help { margin: 10px 0 0 0; font-size: 0.85rem; color: #666; line-height: 1.45; }
-.duel-select {
-  flex: 1;
-  min-width: 200px;
-  height: 34px;
-  border-radius: 6px;
-  border: 1px solid #dfe3e8;
-  padding: 0 10px;
-}
-.duel-list { display: flex; flex-direction: column; gap: 8px; }
-.duel-item {
-  border: 1px solid #edf2f7;
-  border-radius: 8px;
-  padding: 10px;
-  background: #f8fafc;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-.duel-item b { color: var(--primary); }
-.duel-item .meta { font-size: 0.8rem; color: #666; }
-.duel-item .actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-.duel-pill {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #334155;
-  white-space: nowrap;
-}
-.duel-pill.pending { border-color: #fabb00; color: #8a5a00; }
-.duel-pill.active { border-color: #0288d1; color: #035388; }
-.duel-pill.done { border-color: #2e7d32; color: #1b5e20; }
