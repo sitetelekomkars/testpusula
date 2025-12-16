@@ -1003,3 +1003,45 @@ body.editing .edit-icon { display: block !important; }
 .home-shortcut:hover{transform:translateY(-1px);opacity:.92}
 .minimal-input{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;outline:none}
 .minimal-input:focus{border-color:#fabb00;box-shadow:0 0 0 3px rgba(250,187,0,.18)}
+
+
+/* Teknik Döküman Kartları */
+.doc-stack{
+  padding: 14px 14px 0 14px;
+  display: grid;
+  gap: 10px;
+}
+.doc-card{
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(221,227,255,.9);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(20, 20, 60, .08);
+}
+.doc-head{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.doc-title{
+  font-weight: 800;
+  font-size: 14px;
+}
+.doc-body{
+  padding: 0 14px 14px 14px;
+  color: #253;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.doc-card.open .doc-head i{
+  transform: rotate(180deg);
+}
+.doc-head i{
+  transition: transform .2s ease;
+}
