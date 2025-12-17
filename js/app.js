@@ -1,24 +1,48 @@
 const BAKIM_MODU = false;
 
-// NOT: Kullanıcı deneyimi için "SCRIPT URL Ayarla" pop-up'ı tamamen kaldırıldı.
-// Hataları sadece konsola yazıyoruz. (Teknik/TeleSatış ekranları boş kalmasın diye
-// ilgili alanların içinde ayrıca durum mesajı gösteren fonksiyonlar var.)
 function showGlobalError(msg){
-  try{ console.warn('[Pusula]', msg); }catch(e){}
+  try{
+    let box=document.getElementById('globalErrorBox');
+    if(!box){
+      box=document.createElement('div');
+      box.id='globalErrorBox';
+      box.style.position='fixed';
+      box.style.left='12px';
+      box.style.right='12px';
+      box.style.bottom='12px';
+      box.style.zIndex='99999';
+      box.style.background='rgba(211,47,47,0.95)';
+      box.style.color='white';
+      box.style.padding='12px 14px';
+      box.style.borderRadius='10px';
+      box.style.fontFamily='system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      box.style.fontSize='14px';
+      box.style.boxShadow='0 8px 20px rgba(0,0,0,0.25)';
+      box.innerHTML = '<b>Uyarı</b><div id="globalErrorMsg" style="margin-top:6px;opacity:.95"></div>'
+        + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'
+        + '<button id="btnSetScriptUrl" style="border:0;padding:8px 10px;border-radius:8px;cursor:pointer">SCRIPT URL Ayarla</button>'
+        + '<button id="btnCloseErr" style="border:0;padding:8px 10px;border-radius:8px;cursor:pointer;opacity:.9">Kapat</button>'
+        + '</div>';
+      document.body.appendChild(box);
+      document.getElementById('btnCloseErr').onclick=()=>box.remove();
+      document.getElementById('btnSetScriptUrl').onclick=()=>{
+        const cur = localStorage.getItem("PUSULA_SCRIPT_URL") || "";
+        const u = prompt("Apps Script Web App URL (…/exec):", cur);
+        if(u && u.includes("/exec")){
+          localStorage.setItem("PUSULA_SCRIPT_URL", u.trim());
+          alert("Kaydedildi. Sayfayı yenileyin (Ctrl+F5).");
+        } else {
+          alert("URL /exec içermeli.");
+        }
+      };
+    }
+    const m=document.getElementById('globalErrorMsg');
+    if(m) m.textContent=msg;
+  }catch(e){ console.error(e); }
 }
 
 // Apps Script URL'si
-// Not: Tarayıcıda yanlış URL kaydolduysa sistem boş kalmasın diye validasyon yapıyoruz.
-const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdciHyiPCEWGu9hIyN05HkeBgwPlFgzrDZY16K08svQhTcvXhN8A_DyBrzO8SalDu/exec";
-let SCRIPT_URL = (function(){
-  try{
-    const u = (localStorage.getItem("PUSULA_SCRIPT_URL") || "").trim();
-    const ok = u && u.includes('/exec') && u.startsWith('https://script.google.com/macros/s/');
-    return ok ? u : DEFAULT_SCRIPT_URL;
-  }catch(e){
-    return DEFAULT_SCRIPT_URL;
-  }
-})();
+let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycbywdciHyiPCEWGu9hIyN05HkeBgwPlFgzrDZY16K08svQhTcvXhN8A_DyBrzO8SalDu/exec"; // Apps Script Web App URL
 
 // Oyun Değişkenleri
 let jokers = { call: 1, half: 1, double: 1 };
@@ -511,7 +535,9 @@ function loadTechWizardData() {
             method: 'POST', headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "getTechWizardData" })
         }).then(response => response.json()).then(data => {
-            if (data.result === "success" && data.steps) { techWizardData = data.steps; resolve(); } 
+            if (data.result === "success" && data.steps) { techWizardData = data.steps; try { window.techWizardSteps = Object.keys(techWizardData).map(k => ({ id:k, title:(techWizardData[k].title||""), desc: (techWizardData[k].text||"" ) + (techWizardData[k].alert ? ("
+
+"+techWizardData[k].alert) : ""), code: (techWizardData[k].script||""), btns: (techWizardData[k].buttons||[]).map(b=>({label:b.text, next:b.next, style:b.style})) })); } catch(e){} resolve(); } 
             else { techWizardData = {}; }
         }).catch(error => { techWizardData = {}; });
     });
@@ -3965,6 +3991,32 @@ window.switchTechTab = async function(tab){
       const all = await loadTechDocsIfNeeded(false);
       const filtered = all.filter(x => x.categoryKey === tab);
       __renderTechList(tab, filtered);
+    } else if(tab === 'wizard'){
+      // Teknik Sihirbaz (TechWizardSteps)
+      try{
+        if(!techWizardData || Object.keys(techWizardData).length===0){
+          await loadTechWizardData();
+        }
+        // Fullscreen wizard list uses techWizardSteps (populated in loadTechWizardData)
+        if(typeof renderTechWizardInto === "function") renderTechWizardInto('x-wizard');
+      }catch(e){ console.error(e); }
+    } else if(tab === 'cards'){
+      // Teknik Kartlar (Teknik_Dokumanlar) - tüm teknik dokümanları listele
+      const all = await loadTechDocsIfNeeded(false);
+      const box = document.getElementById('x-cards');
+      if(box){
+        if(!all || all.length===0){
+          box.innerHTML = '<div style="padding:16px;opacity:.7">Teknik kart bulunamadı.</div>';
+        }else{
+          box.innerHTML = all.map((it)=>`
+            <div class="news-item" style="cursor:pointer" onclick="Swal.fire({title: __escapeHtml(it.baslik), html: '<div style=\'text-align:left;line-height:1.7\'>'+ (it.icerik||'').replace(/
+/g,'<br>') + (it.link?('<div style=\'margin-top:10px\'><a href=\''+__escapeHtml(it.link)+'\' target=\'_blank\'>Linki Aç</a></div>'):'') + '</div>'})">
+              <span class="news-title">${__escapeHtml(it.baslik||'')}</span>
+              <span class="news-tag" style="background:#eef;border:1px solid #dde3ff">${__escapeHtml(it.kategori||'')}</span>
+            </div>
+          `).join('');
+        }
+      }
     }
   }catch(e){
     console.error(e);
