@@ -14,12 +14,15 @@
   </div>
   <div class="home-panels">
     <div class="home-panel">
-      <div class="home-panel-head"><i class="fas fa-circle-info"></i> Bugün Neler Var?</div>
+      <div class="home-panel-head"><i class="fas fa-bullhorn"></i> Duyurular</div>
       <div id="home-today" class="home-panel-body">Yükleniyor...</div>
     </div>
     <div class="home-panel">
-      <div class="home-panel-head"><i class="fas fa-star"></i> Favoriler</div>
-      <div id="home-favs" class="home-panel-body">Favori içeriklerin burada görünecek.</div>
+      <div class="home-panel-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span><i class="fas fa-circle-info"></i> Bugün Neler Var?</span>
+        <button id="home-add-today" class="btn btn-copy" style="display:none;white-space:nowrap" onclick="addHomeTodayItem()">+ Ekle</button>
+      </div>
+      <div id="home-favs" class="home-panel-body">Yükleniyor...</div>
     </div>
     <div class="home-panel">
       <div class="home-panel-head"><i class="fas fa-bolt"></i> Hızlı Kısayollar</div>
