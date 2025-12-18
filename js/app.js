@@ -13,7 +13,7 @@ function showGlobalError(message){
 }
 
 // Apps Script URL'si
-let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycbz6dDFHv-49h-13EwNPVCqpj-H4xjRqNpkz1JPvkixDkOkM_AUyN2cgYpH7-j9a5Tg/exec"; // Apps Script Web App URL
+let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycbywdciHyiPCEWGu9hIyN05HkeBgwPlFgzrDZY16K08svQhTcvXhN8A_DyBrzO8SalDu/exec"; // Apps Script Web App URL
 
 // ---- API CALL helper (Menu/Yetki vs için gerekli) ----
 async function apiCall(action, payload = {}) {
@@ -459,32 +459,42 @@ function checkSession() {
     const savedToken = localStorage.getItem("sSportToken");
     const savedRole = localStorage.getItem("sSportRole");
     const savedGroup = localStorage.getItem("sSportGroup");
+
     if (savedUser && savedToken) {
         currentUser = savedUser;
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("user-display").innerText = currentUser;
+
         checkAdmin(savedRole);
-        try{ if(savedGroup){ const el=document.getElementById("t-side-role"); if(el) el.textContent=savedGroup; const el2=document.getElementById("tech-side-role"); if(el2) el2.textContent=savedGroup; } }catch(e){}
+
+        try{
+            if(savedGroup){
+                const el=document.getElementById("t-side-role"); if(el) el.textContent=savedGroup;
+                const el2=document.getElementById("tech-side-role"); if(el2) el2.textContent=savedGroup;
+            }
+        }catch(e){}
+
         startSessionTimer();
 
-        // ✅ Yenilemede de menü yetkilerini uygula
-        try { loadMenuPermissions(); } catch (e) {}
-        try { loadHomeBlocks(); } catch (e) {}
+        // ✅ YENİ: Yenilemede de menü/blok yetkilerini uygula
+        try{ loadMenuPermissions(); }catch(e){}
+        try{ loadHomeBlocks(); }catch(e){}
 
         if (BAKIM_MODU) {
             document.getElementById("maintenance-screen").style.display = "flex";
         } else {
             document.getElementById("main-app").style.display = "block";
+
             loadContentData();
             loadWizardData();
             loadTechWizardData();
-            
+
             // Eğer qusers rolündeyse, ana içeriği gizle ve kalite modülünü aç
             if (savedRole === 'qusers') {
                 const grid = document.getElementById('cardGrid'); if (grid) grid.style.display = 'none';
                 const controls = document.querySelector('.control-wrapper'); if (controls) controls.style.display = 'none';
                 const ticker = document.querySelector('.news-ticker-box'); if (ticker) ticker.style.display = 'none';
-                
+
                 openQualityArea(); // Yeni Full Screen Modül
             }
         }
