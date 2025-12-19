@@ -3650,127 +3650,22 @@ function hideHomeScreen(){
     if (grid) grid.style.display = 'grid';
 }
 
-// --- HOME BLOCKS (Günün Sözü) ---
-let homeBlocks = null;
-
-async function fetchHomeBlocks(){
-    const r = await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "getHomeBlocks", username: currentUser, token: getToken() })
-    });
-    const d = await r.json();
-    if(!d || d.result !== "success") throw new Error((d && d.message) ? d.message : "Ana sayfa blokları alınamadı.");
-    return d.blocks || {};
-}
-
-async function editHomeBlock(key){
-    // Sadece 'quote' için kullanılacak (buton sadece onda var)
-    if(!isAdminMode) return;
-    if(key !== 'quote') return;
-
-    let current = (homeBlocks && homeBlocks.quote && homeBlocks.quote.content) ? String(homeBlocks.quote.content) : "";
-
-    const { value: text } = await Swal.fire({
-        title: "Günün Sözü",
-        input: "textarea",
-        inputValue: current,
-        inputPlaceholder: "Söz / not ekle...",
-        showCancelButton: true,
-        confirmButtonText: "Kaydet",
-        cancelButtonText: "Vazgeç",
-        inputAttributes: { "aria-label": "Günün sözü" }
-    });
-    if(text === undefined) return;
-
-    Swal.fire({ title: "Kaydediliyor...", didOpen: () => Swal.showLoading(), showConfirmButton: false });
-    const r = await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "updateHomeBlock", username: currentUser, token: getToken(), key: "quote", title: "Günün Sözü", content: String(text||"").trim(), visibleGroups: "" })
-    });
-    const d = await r.json();
-    if(!d || d.result !== "success"){
-        Swal.fire("Hata", (d && d.message) ? d.message : "Güncelleme başarısız.", "error");
-        return;
-    }
-    Swal.fire({ icon: "success", title: "Kaydedildi", timer: 900, showConfirmButton: false });
-    try{ homeBlocks = await fetchHomeBlocks(); }catch(e){}
-    renderHomePanels();
-}
-
-function _todayISO_istanbul(){
-    try{
-        // sv-SE => YYYY-MM-DD
-        return new Intl.DateTimeFormat('sv-SE', { timeZone:'Europe/Istanbul', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
-    }catch(e){
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = ("0"+(d.getMonth()+1)).slice(-2);
-        const dd = ("0"+d.getDate()).slice(-2);
-        return `${y}-${m}-${dd}`;
-    }
-}
-
-async function renderHomePanels(){
-    // Bugün kutusu: Yayın Akışı'nda bugünün maçları
+function renderHomePanels(){
+    // Bugün kutusu: en güncel 3 duyuru + yaklaşan yayın akışı (varsa)
     const todayEl = document.getElementById('home-today');
     if(todayEl){
-        todayEl.innerHTML = '<span style="color:#777">Yükleniyor...</span>';
-        try{
-            const all = await fetchBroadcastFlow();
-            const todayISO = _todayISO_istanbul();
-            const todays = (all||[]).filter(x => String(x?.dateISO||'') === todayISO);
-            const important = todays.filter(x => String(x?.importance||'').toLowerCase().replace('ö','o') === 'onemli');
-            const list = (important.length ? important : todays).slice(0, 8);
-            if(!list.length){
-                todayEl.innerHTML = 'Bugün için yayın bulunamadı.';
-            }else{
-                todayEl.innerHTML = list.map(it=>`
-                    <div style="padding:10px;border:1px solid #eef2f7;border-radius:10px;margin-bottom:10px;background:#fff;cursor:pointer" onclick="openBroadcastFlow()">
-                      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-                        <div style="font-weight:900;color:#0e1b42;line-height:1.25">${escapeHtml(it.event||'-')}</div>
-                        <div style="font-weight:900;color:#0e1b42;white-space:nowrap">${escapeHtml(it.time||'')}</div>
-                      </div>
-                      <div style="margin-top:6px;font-size:.86rem;color:#666;display:flex;gap:10px;flex-wrap:wrap">
-                        <span><i class="fas fa-microphone"></i> ${escapeHtml(it.announcer||'-')}</span>
-                      </div>
-                    </div>
-                `).join('');
-            }
-        }catch(e){
-            todayEl.innerHTML = '<span style="color:#d9534f;font-weight:800">Yayın akışı alınamadı.</span>';
-        }
-    }
-
-    // Duyurular kutusu: en güncel duyurular
-    const annEl = document.getElementById('home-ann');
-    if(annEl){
-        const active = (newsData || []).filter(n => n.status !== 'Pasif');
-        const latest = active.slice(0,4);
-        if(!latest.length){
-            annEl.innerHTML = 'Henüz duyuru yok.';
+        const latest = (newsData || []).slice(0,3);
+        if(latest.length===0){
+            todayEl.innerHTML = 'Henüz duyuru yok.';
         }else{
-            annEl.innerHTML = latest.map(n=>`
-                <div style="padding:10px;border:1px solid #eef2f7;border-radius:10px;margin-bottom:10px;background:#fff;cursor:pointer" onclick="openNews()">
+            todayEl.innerHTML = latest.map(n=>`
+                <div style="padding:10px;border:1px solid #eef2f7;border-radius:10px;margin-bottom:10px;background:#fff">
                   <div style="font-size:.78rem;color:#8a8a8a;font-weight:800">${escapeHtml(n.date||'')}</div>
                   <div style="font-weight:900;color:#0e1b42;margin-top:2px">${escapeHtml(n.title||'')}</div>
-                  <div style="color:#555;margin-top:6px;line-height:1.45">${escapeHtml((n.desc||'')).slice(0,140)}${(n.desc||'').length>140?'...':''}</div>
+                  <div style="color:#555;margin-top:6px;line-height:1.45">${escapeHtml((n.desc||'')).slice(0,160)}${(n.desc||'').length>160?'...':''}</div>
                 </div>
             `).join('');
         }
-    }
-
-    // Günün Sözü
-    const quoteEl = document.getElementById('home-quote');
-    const quoteBtn = document.getElementById('home-edit-quote');
-    if(quoteBtn) quoteBtn.style.display = (isAdminMode ? 'inline-flex' : 'none');
-    if(quoteEl){
-        if(!homeBlocks){
-            try{ homeBlocks = await fetchHomeBlocks(); }catch(e){ homeBlocks = {}; }
-        }
-        const txt = (homeBlocks && homeBlocks.quote && homeBlocks.quote.content) ? String(homeBlocks.quote.content).trim() : '';
-        quoteEl.innerHTML = txt ? `<div class="home-quote-box">${escapeHtml(txt)}</div>` : '<span style="color:#777">Söz eklenmedi.</span>';
     }
 
     // Favoriler kutusu: favori kartların ilk 6'sı
