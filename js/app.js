@@ -95,21 +95,102 @@ function _broadcastItemEpoch(it){
   return d2.getTime()||0;
 }
 async function _getImportantMatchesNextHours(hours=48, limit=4){
+  // Geriye dönük uyumluluk: Eğer sheet'te "Önem Durumu" kolonu kullanılıyorsa
+  // öncelik onu baz alır; yoksa eski title/format heuristiği ile devam eder.
   try{
     const items = await fetchBroadcastFlow();
     const now = Date.now();
     const max = now + (hours*60*60*1000);
+
+    const isImportantRow = (it)=>{
+      const v = (it?.["Önem Durumu"] ?? it?.["Onem Durumu"] ?? it?.["Önem"] ?? it?.["Onem"] ?? it?.Important ?? it?.important ?? it?.importance ?? "");
+      const s = String(v||"").trim().toLowerCase();
+      return s.includes("önemli") || s.includes("onemli") || s==="1" || s==="true" || s==="yes";
+    };
+
     const list = (items||[])
       .map(it=>({...it, __epoch:_broadcastItemEpoch(it)}))
       .filter(it=>it.__epoch && it.__epoch>=now && it.__epoch<=max)
-      .filter(it=>_isImportantMatchTitle(it.title||it.program||it.name||""))
+      .filter(it=> isImportantRow(it) || _isImportantMatchTitle(it.title||it.program||it.name||it.event||it["EVENT NAME - Turkish"]||"") )
       .sort((a,b)=>a.__epoch-b.__epoch)
       .slice(0, limit);
+
     return list;
   }catch(e){
     return [];
   }
 }
+
+function _todayISO_TR(){
+  try{
+    // yyyy-mm-dd (Europe/Istanbul)
+    const parts = new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+    const y = parts.find(p=>p.type==="year")?.value;
+    const m = parts.find(p=>p.type==="month")?.value;
+    const d = parts.find(p=>p.type==="day")?.value;
+    return `${y}-${m}-${d}`;
+  }catch(e){
+    const dt = new Date();
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth()+1).padStart(2,"0");
+    const d = String(dt.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+  }
+}
+function _isTodayBroadcastItem(it){
+  const todayISO = _todayISO_TR();
+  const iso = String(it?.dateISO||it?.DateISO||"").trim();
+  if(iso && iso===todayISO) return true;
+
+  const dateStr = String(it?.date||it?.Date||it?.day||it?.["DATE"]||"").trim();
+  // dd.MM.yyyy
+  const m = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if(m){
+    const iso2 = `${m[3]}-${m[2]}-${m[1]}`;
+    return iso2===todayISO;
+  }
+  // dd/mm/yyyy
+  const m2 = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m2){
+    const iso3 = `${m2[3]}-${m2[2]}-${m2[1]}`;
+    return iso3===todayISO;
+  }
+  // fallback: try Date parse
+  const d = new Date(dateStr);
+  if(!isNaN(d.getTime())){
+    const y = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,"0");
+    const da = String(d.getDate()).padStart(2,"0");
+    return `${y}-${mo}-${da}`===todayISO;
+  }
+  return false;
+}
+function _isImportantBroadcastItem(it){
+  const v = (it?.["Önem Durumu"] ?? it?.["Onem Durumu"] ?? it?.["Önem"] ?? it?.["Onem"] ?? it?.Important ?? it?.important ?? it?.importance ?? "");
+  const s = String(v||"").trim().toLowerCase();
+  return s.includes("önemli") || s.includes("onemli") || s==="1" || s==="true" || s==="yes";
+}
+
+async function _getTodayImportantMatches(limit=6){
+  try{
+    const items = await fetchBroadcastFlow();
+    const now = Date.now();
+    return (items||[])
+      .map(it=>({...it, __epoch:_broadcastItemEpoch(it)}))
+      .filter(it=>_isTodayBroadcastItem(it))
+      .filter(it=>_isImportantBroadcastItem(it))
+      .sort((a,b)=>{
+        const ae = a.__epoch || 0;
+        const be = b.__epoch || 0;
+        if(ae && be) return ae-be;
+        return String(a?.time||"").localeCompare(String(b?.time||""));
+      })
+      .slice(0, limit);
+  }catch(e){
+    return [];
+  }
+}
+
 
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -3870,10 +3951,10 @@ async function renderHomePanels(){
         }
 
         // Önemli maçlar
-        const matches = await _getImportantMatchesNextHours(48, 4);
+        const matches = await _getTodayImportantMatches(6);
         if(matches.length){
             html += `<div style="margin:14px 0 8px;font-weight:900;color:#0e1b42;display:flex;align-items:center;gap:8px">
-                        <i class="fas fa-calendar-alt" style="color:#fabb00"></i> Önemli Maçlar (48s)
+                        <i class="fas fa-calendar-alt" style="color:#fabb00"></i> 🎯 Bugün Önemli Maçlar
                      </div>`;
             html += matches.map(it=>{
                 const title = it.title||it.program||it.name||"";
