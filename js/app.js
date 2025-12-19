@@ -4299,20 +4299,30 @@ window.switchTechTab = async function(tab){
 // expose for onclick
 try{ window.openMenuPermissions = openMenuPermissions; }catch(e){}
 
-/* === KALİTE VERİ FIX === */
-function openQualityArea() {
-  document.getElementById('quality-fullscreen').style.display = 'flex';
+/* === BUGÜN NELER VAR : YAYIN AKIŞI === */
+function renderTodayBroadcasts() {
   fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "getQualityData", token: getToken() })
+    body: JSON.stringify({ action: "getTodayBroadcasts" })
   })
   .then(r => r.json())
   .then(res => {
     if (res.result !== "success") return;
-    allEvaluationsData = res.data || [];
-    populateQualityAgentFilter(allEvaluationsData);
-    populateQualityGroupFilter(allEvaluationsData);
-    renderQualityTable(allEvaluationsData);
+    const box = document.getElementById("today-content");
+    if (!box) return;
+
+    if (res.data.length === 0) {
+      box.innerHTML = "<i>Bugün yayın yok</i>";
+      return;
+    }
+
+    box.innerHTML = res.data.map(m => `
+      <div class="today-item" onclick="openBroadcastFlow()">
+        <b>${m.league}</b> • ${m.match} <span>${m.time}</span>
+      </div>
+    `).join("");
   });
 }
+
+window.addEventListener('load', renderTodayBroadcasts);
