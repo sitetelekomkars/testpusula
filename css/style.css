@@ -1194,3 +1194,7 @@ body.editing .edit-icon { display: block !important; }
   color:#666;
   font-weight:800;
 }
+
+/* --- HOME CLICKABLE BLOCKS --- */
+.home-card-head.home-clickable{cursor:pointer;}
+.home-card-head.home-clickable:hover{filter:brightness(1.05);}
