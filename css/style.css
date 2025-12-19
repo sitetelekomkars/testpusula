@@ -199,6 +199,10 @@ body {
 .link-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
 /* --- TICKER (Duyuru Barı İyileştirmesi) --- */
 .news-ticker-box { 
+    position: sticky;
+    /* Üstteki sabit header (logo + menü) yüksekliğine göre ayarla */
+    top: 92px;
+    z-index: 9999;
     width: 100%;
     /* Rengi üst barın ana rengine yakın, hafif koyu yaptık */
     background: #0a1532; 
@@ -213,6 +217,10 @@ body {
     margin-top: 0px; 
     box-sizing: border-box;
     overflow: hidden; 
+}
+
+@media (max-width: 900px){
+  .news-ticker-box{ top: 120px; }
 }
 .news-ticker-box:hover { background: #1c2438; } 
 .ticker-label { 
