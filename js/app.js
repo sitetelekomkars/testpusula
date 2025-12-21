@@ -127,6 +127,83 @@ function loadMenuPermissions(){
   }).catch(()=>{});
 }
 
+
+// -------------------- HomeBlocks (Ana Sayfa blokları) --------------------
+let homeBlocksCache = null; // { key: {title,content,visibleGroups,updatedAt,updatedBy} }
+
+function _decodeUnicodeEscapes(v){
+  const s = (v ?? '').toString();
+  return s
+    .replace(/\\u003c/g,'<')
+    .replace(/\\u003e/g,'>')
+    .replace(/\\u0026/g,'&')
+    .replace(/\\n/g,'\n');
+}
+
+function renderHomeBlocks(){
+  try{
+    const quoteEl = document.getElementById('home-quote');
+    if(quoteEl){
+      const q = homeBlocksCache && homeBlocksCache.quote ? (homeBlocksCache.quote.content||'') : '';
+      const qText = _decodeUnicodeEscapes(q).trim();
+      quoteEl.textContent = qText ? qText : 'Bugün için bir söz eklenmemiş.';
+    }
+    const showEd = !!(isAdminMode && isEditingActive);
+    const b1=document.getElementById('home-edit-today'); if(b1) b1.style.display = showEd ? 'inline-flex' : 'none';
+    const b2=document.getElementById('home-edit-ann');   if(b2) b2.style.display = showEd ? 'inline-flex' : 'none';
+    const b3=document.getElementById('home-edit-quote'); if(b3) b3.style.display = showEd ? 'inline-flex' : 'none';
+  }catch(e){}
+}
+
+function loadHomeBlocks(){
+  return apiCall('getHomeBlocks',{}).then(res=>{
+    const items = (res.items || []);
+    homeBlocksCache = {};
+    items.forEach(it=>{
+      if(!it || !it.key) return;
+      homeBlocksCache[it.key] = it;
+    });
+    renderHomeBlocks();
+  }).catch(()=>{});
+}
+
+async function editHomeBlock(key){
+  if(!isAdminMode) return;
+  if(!isEditingActive){
+    Swal.fire('Düzenleme Kapalı','Önce "Düzenlemeyi Aç" yapmalısın.','info');
+    return;
+  }
+  const current = (homeBlocksCache && homeBlocksCache[key] ? (homeBlocksCache[key].content||'') : '');
+  const curText = _decodeUnicodeEscapes(current);
+
+  const titleMap = { today:'Bugün Neler Var?', ann:'Duyurular', quote:'Günün Sözü' };
+  const { value: v } = await Swal.fire({
+    title: (titleMap[key]||'Blok') + ' Düzenle',
+    input: 'textarea',
+    inputValue: curText,
+    inputPlaceholder: 'İçerik...',
+    showCancelButton: true,
+    confirmButtonText: 'Kaydet',
+    cancelButtonText: 'Vazgeç'
+  });
+  if(v === undefined) return;
+
+  Swal.fire({ title:'Kaydediliyor...', didOpen:()=>Swal.showLoading(), showConfirmButton:false });
+  try{
+    await apiCall('updateHomeBlock', {
+      key,
+      title: (homeBlocksCache && homeBlocksCache[key] && homeBlocksCache[key].title) ? homeBlocksCache[key].title : (titleMap[key]||key),
+      content: (v||'').toString(),
+      visibleGroups: (homeBlocksCache && homeBlocksCache[key] && homeBlocksCache[key].visibleGroups) ? homeBlocksCache[key].visibleGroups : ''
+    });
+    await loadHomeBlocks();
+    Swal.fire({ icon:'success', title:'Kaydedildi', timer:1100, showConfirmButton:false });
+  }catch(e){
+    Swal.fire('Hata', (e && e.message) ? e.message : 'Kaydedilemedi', 'error');
+  }
+}
+// -------------------- /HomeBlocks --------------------
+
 // LocAdmin panel
 function openMenuPermissions(){
   const role=getMyRole();
@@ -695,20 +772,21 @@ function loadContentData() {
         document.getElementById('loading').style.display = 'none';
         if (data.result === "success") {
             const rawData = data.data;
+            const __decAll = (s)=> (s ?? '').toString().replace(/\\u003c/g,'<').replace(/\\u003e/g,'>').replace(/\\u0026/g,'&').replace(/\\n/g,'\n');
             database = rawData.filter(i => ['card','bilgi','teknik','kampanya','ikna'].includes(i.Type.toLowerCase())).map(i => ({
-                title: i.Title, category: i.Category, text: i.Text, script: i.Script, code: i.Code, link: i.Link, date: formatDateToDDMMYYYY(i.Date)
+                title: i.Title, category: i.Category, text: __decAll(i.Text), script: __decAll(i.Script), code: __decAll(i.Code), link: __decAll(i.Link), date: formatDateToDDMMYYYY(i.Date)
             }));
             // Yeni eklenenleri üstte göstermek için tarihe göre (azalan) sırala
             database.sort((a,b) => parseDateTRToTS(b.date) - parseDateTRToTS(a.date));
             newsData = rawData.filter(i => i.Type.toLowerCase() === 'news').map(i => ({
-                date: formatDateToDDMMYYYY(i.Date), title: i.Title, desc: i.Text, type: i.Category, status: i.Status
+                date: formatDateToDDMMYYYY(i.Date), title: i.Title, desc: __decAll(i.Text), type: i.Category, status: i.Status
             }));
             sportsData = rawData.filter(i => i.Type.toLowerCase() === 'sport').map(i => ({
-                title: i.Title, icon: i.Icon, desc: i.Text, tip: i.Tip, detail: i.Detail, pronunciation: i.Pronunciation
+                title: i.Title, icon: i.Icon, desc: __decAll(i.Text), tip: __decAll(i.Tip), detail: __decAll(i.Detail), pronunciation: __decAll(i.Pronunciation)
             }));
             try{ applySportsRights(); }catch(e){}
 
-            salesScripts = rawData.filter(i => i.Type.toLowerCase() === 'sales').map(i => ({ title: i.Title, text: i.Text }));
+            salesScripts = rawData.filter(i => i.Type.toLowerCase() === 'sales').map(i => ({ title: i.Title, text: __decAll(i.Text) }));
             quizQuestions = rawData.filter(i => i.Type.toLowerCase() === 'quiz').map(i => ({
                 q: i.Text, opts: i.QuizOptions ? i.QuizOptions.split(',').map(o => o.trim()) : [], a: parseInt(i.QuizAnswer)
             }));
@@ -882,14 +960,21 @@ function showCardDetail(title, text) {
         const t = c.title || c.name || 'Detay';
         const body = (c.text || c.desc || '').toString();
         const script = (c.script || '').toString();
+        const __dec = (s)=> (s ?? '').toString()
+          .replace(/\\u003c/g,'<')
+          .replace(/\\u003e/g,'>')
+          .replace(/\\u0026/g,'&')
+          .replace(/\\n/g,'\n');
+        const bodyNorm = __dec(body).replace(/<br\s*\/?>/gi,'\n');
+        const scriptNorm = __dec(script).replace(/<br\s*\/?>/gi,'\n');
         const alertTxt = (c.alert || '').toString();
         const link = (c.link || '').toString();
         const html = `
           <div style="text-align:left; font-size:1rem; line-height:1.6; white-space:pre-line;">
-            ${escapeHtml(body).replace(/\n/g,'<br>')}
+            ${escapeHtml(bodyNorm).replace(/\n/g,'<br>')}
             ${link ? `<div style="margin-top:12px"><a href="${escapeHtml(link)}" target="_blank" rel="noreferrer" style="font-weight:800;color:var(--info);text-decoration:none"><i class=\"fas fa-link\"></i> Link</a></div>` : ''}
             ${script ? `<div class="tech-script-box" style="margin-top:12px">
-                <span class="tech-script-label">Müşteriye iletilecek:</span>${escapeHtml(script).replace(/\n/g,'<br>')}
+                <span class="tech-script-label">Müşteriye iletilecek:</span>${escapeHtml(scriptNorm).replace(/\n/g,'<br>')}
               </div>` : ''}
             ${alertTxt ? `<div class="tech-alert" style="margin-top:12px">${escapeHtml(alertTxt).replace(/\n/g,'<br>')}</div>` : ''}
           </div>`;
@@ -3674,6 +3759,9 @@ function hideHomeScreen(){
 }
 
 function renderHomePanels(){
+    // HomeBlocks (quote/today/ann) sheet'ten çek
+    if(!homeBlocksCache){ try{ loadHomeBlocks(); }catch(e){} }
+
     // --- BUGÜN NELER VAR? (Yayın Akışı / bugünün maçları) ---
     const todayEl = document.getElementById('home-today');
     if(todayEl){
@@ -3887,6 +3975,9 @@ async function openTelesalesArea(){
     renderTelesalesDataOffers();
     renderTelesalesScripts();
     switchTelesalesTab('data');
+    // HomeBlocks render (quote edit buttons vb.)
+    renderHomeBlocks();
+
 }
 
 function closeFullTelesales(){
@@ -4903,6 +4994,7 @@ function __normalizeTechTab(tab){
 }
 function __normalizeTechCategory(cat){
   const c = (cat||"").toString().trim().toLowerCase();
+  if(['broadcast','access','app','activation','info'].includes(c)) return c;
   if(c.startsWith("yay")) return "broadcast";
   if(c.startsWith("eri")) return "access";
   if(c.startsWith("app")) return "app";
@@ -5055,6 +5147,16 @@ async function filterTechDocList(tabKey){
 }
 
 // ---------------------------
+function __techTabToLabel(tabKey){
+  const k = (tabKey||'').toString().trim().toLowerCase();
+  if(k==='broadcast') return 'Yayın';
+  if(k==='access') return 'Erişim';
+  if(k==='app') return 'App Hataları';
+  if(k==='activation') return 'Aktivasyon';
+  if(k==='info') return 'Bilgi';
+  return tabKey;
+}
+
 // TECH DOCS (Sheet) - Admin CRUD
 // ---------------------------
 async function addTechDoc(tabKey){
@@ -5075,7 +5177,7 @@ async function addTechDoc(tabKey){
       const title = (document.getElementById('td-title').value||'').trim();
       if(!title) return Swal.showValidationMessage('Başlık zorunlu');
       return {
-        kategori: tabKey,
+        kategori: __techTabToLabel(tabKey),
         baslik: title,
         icerik: (document.getElementById('td-content').value||'').trim(),
         adim: (document.getElementById('td-step').value||'').trim(),
@@ -5128,7 +5230,7 @@ async function editTechDoc(tabKey, baslik){
       const title = (document.getElementById('td-title').value||'').trim();
       if(!title) return Swal.showValidationMessage('Başlık zorunlu');
       return {
-        kategori: tabKey,
+        kategori: __techTabToLabel(tabKey),
         baslik: title,
         icerik: (document.getElementById('td-content').value||'').trim(),
         adim: (document.getElementById('td-step').value||'').trim(),
@@ -5145,7 +5247,7 @@ async function editTechDoc(tabKey, baslik){
     const r = await fetch(SCRIPT_URL, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'upsertTechDoc', username: currentUser, token: getToken(), keyKategori: tabKey, keyBaslik: baslik, ...v })
+      body: JSON.stringify({ action:'upsertTechDoc', username: currentUser, token: getToken(), keyKategori: __techTabToLabel(tabKey), keyBaslik: baslik, ...v })
     });
     const d = await r.json();
     if(d.result==='success'){
@@ -5175,7 +5277,7 @@ function deleteTechDoc(tabKey, baslik){
       const r = await fetch(SCRIPT_URL, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ action:'deleteTechDoc', username: currentUser, token: getToken(), keyKategori: tabKey, keyBaslik: baslik })
+        body: JSON.stringify({ action:'deleteTechDoc', username: currentUser, token: getToken(), keyKategori: __techTabToLabel(tabKey), keyBaslik: baslik })
       });
       const d = await r.json();
       if(d.result==='success'){
