@@ -878,18 +878,18 @@ function filterContent() {
 function showCardDetail(title, text) {
     // Sheet kaynaklı içeriklerde "<br>", "\\u003cbr>" gibi kaçışlar olabiliyor.
     // Güvenli şekilde (kısıtlı tag seti) HTML render etmek için normalize eder.
-    const normalizeRichTextToHtml = (raw)=>{
+    const normalizeRichTextToHtml = (raw) => {
         let s = (raw ?? '').toString();
 
         // Sık görülen kaçışlar
         s = s
           // "\u003cbr>" gibi literal kaçışları gerçek tag'e çevir
           .replace(/\\u003cbr\\u003e/gi, '<br>')
-          .replace(/\\u003cbr\s*\\/\\u003e/gi, '<br>')
+          .replace(/\\u003cbr\s*\/\\u003e/gi, '<br>') // Düzenlendi: \\/ yerine \/
           .replace(/\\u003c\s*br\s*\\u003e/gi, '<br>')
-          .replace(/\\u003c\s*br\s*\\/\\u003e/gi, '<br>')
-          .replace(/\\u003c/gi,'<')
-          .replace(/\\u003e/gi,'>')
+          .replace(/\\u003c\s*br\s*\/\\u003e/gi, '<br>') // Düzenlendi: \\/ yerine \/
+          .replace(/\\u003c/gi, '<')
+          .replace(/\\u003e/gi, '>')
           // literal \n -> gerçek newline
           .replace(/\\n/g, '\n');
 
