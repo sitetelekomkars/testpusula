@@ -3859,10 +3859,11 @@ function editHomeBlock(kind){
             // offline fallback
             localStorage.setItem('homeQuote', val);
             await renderHomePanels();
-            Swal.fire("Kaydedildi", "Günün sözü yerel olarak güncellendi. (Sunucuya yazılamadı)", "info");
-        }
-    });
-}
+         Swal.fire(
+    "Kaydedildi",
+    "Günün sözü yerel olarak güncellendi. (Sunucuya yazılamadı)",
+    "info"
+  );
 }
 
                 // kartı tıklayınca yayın akışına git
