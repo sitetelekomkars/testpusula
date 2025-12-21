@@ -4909,18 +4909,18 @@ function __parseTechDocContent(raw){
   return { html: __normalizeTechHtml(s), script: '', link: '' };
 }
 
-function __normalizeTechHtml(s){
-  let out = (s==null ? '' : String(s));
-  // \u003cbr> (ve benzeri) kaçışlarını <br> yap
-  out = out
-    .replace(/\\u003cbr\\s*\\/?\\u003e/gi,'<br>')
-    .replace(/\\u003cbr\\s*\\/?/gi,'<br>')
-    .replace(/\\u003cbr>/gi,'<br>')
-    .replace(/\u003cbr\s*\/?\u003e/gi,'<br>')
-    .replace(/\u003cbr>/gi,'<br>');
-  // \n yeni satırları br'e çevir (textarea kayıtları)
-  out = out.replace(/\\n/g,'<br>').replace(/\n/g,'<br>');
-  return out;
+function __normalizeTechHtml(s) {
+    if (s == null) return '';
+    let out = String(s);
+
+    // Hem unicode kaçışlarını hem de gerçek <br> varyasyonlarını tek seferde yakalar
+    // <br>, <br/>, <br  />, \u003cbr\u003e gibi...
+    out = out.replace(/(<br\s*\/?>|\\u003cbr\s*\/?\\u003e)/gi, '<br>');
+
+    // Yeni satır karakterlerini br'ye çevir
+    out = out.replace(/\n/g, '<br>');
+
+    return out;
 }
 
 function __normalizeTechTab(tab){
