@@ -708,6 +708,32 @@ function startSessionTimer() {
     },  28800000); 
 }
 function openUserMenu() { toggleUserDropdown(); }
+
+// --- USER DROPDOWN (Eksik fonksiyon düzeltildi) ---
+function toggleUserDropdown(forceClose=false){
+  try{
+    const dd = document.getElementById('userDropdown');
+    const btn = document.getElementById('adminBtn');
+    const arrow = document.getElementById('user-menu-arrow');
+    if(!dd) return;
+    const isOpen = dd.classList.contains('show');
+    const nextOpen = forceClose ? false : !isOpen;
+    dd.classList.toggle('show', nextOpen);
+    if(btn) btn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+    if(arrow) arrow.style.transform = nextOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  }catch(e){}
+}
+// dışarı tıklayınca kapat
+document.addEventListener('click', (ev)=>{
+  try{
+    const dd = document.getElementById('userDropdown');
+    const btn = document.getElementById('adminBtn');
+    if(!dd || !btn) return;
+    const t = ev.target;
+    if(dd.contains(t) || btn.contains(t)) return;
+    if(dd.classList.contains('show')) toggleUserDropdown(true);
+  }catch(e){}
+});
 async function changePasswordPopup(isMandatory = false) {
     const { value: formValues } = await Swal.fire({
         title: isMandatory ? 'Yeni Şifre Belirleyin' : 'Şifre Değiştir',
