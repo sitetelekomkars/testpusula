@@ -518,6 +518,71 @@ body.editing .edit-icon { display: block !important; }
 .stat-val { font-size: 1.8rem; font-weight: 800; color: #333; line-height: 1; }
 .stat-label { font-size: 0.85rem; color: #777; margin-top: 5px; }
 .q-dashboard-grid { display: flex; gap: 20px; }
+
+
+/* --- KALİTE DASHBOARD (Chat + TeleSatış) --- */
+.q-dashboard-grid-2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:20px;
+    align-items:stretch;
+    margin-bottom:18px;
+}
+.q-channel-card{
+    background:#fff;
+    border-radius:14px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    min-height:340px;
+}
+.q-channel-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:14px;
+}
+.q-channel-title{
+    font-size:1.05rem;
+    font-weight:800;
+    color:#0e1b42;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.q-channel-kpis{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+}
+.q-channel-kpis .kpi{ text-align:right; }
+.q-channel-kpis .kpi-val{ font-size:1.15rem; font-weight:900; color:#111; line-height:1; }
+.q-channel-kpis .kpi-label{ font-size:0.72rem; color:#777; margin-top:4px; font-weight:600; }
+
+.q-channel-body{
+    display:grid;
+    grid-template-columns: 170px 1fr;
+    gap:18px;
+    align-items:center;
+    flex:1;
+}
+.q-channel-ring{ display:flex; align-items:center; justify-content:center; }
+.q-channel-chart{ width:100%; }
+.q-channel-chart h3{ margin:0 0 10px 0; color:#0e1b42; font-size:1rem; }
+
+@media (max-width: 1100px){
+    .q-dashboard-grid-2{ grid-template-columns: 1fr; }
+    .q-channel-body{ grid-template-columns: 160px 1fr; }
+}
+@media (max-width: 720px){
+    .q-stats-row{ grid-template-columns: 1fr; }
+    .q-channel-body{ grid-template-columns: 1fr; }
+    .q-channel-kpis{ justify-content:flex-start; }
+    .q-channel-kpis .kpi{ text-align:left; }
+}
 .q-chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); flex: 1; display:flex; flex-direction:column; align-items:center; }
 .large-ring { width: 150px; height: 150px; margin: 20px auto; }
 .large-ring .score-circle-inner { width: 120px; height: 120px; font-size: 2.5rem; }
@@ -1243,19 +1308,3 @@ body.editing .edit-icon { display: block !important; }
 
 /* Hide TeleSatış segment filter row (in case html remains) */
 #t-segment-filter{ display:none !important; }
-
-/* --- Kalite Dashboard: Admin Karşılaştırma (Chat vs TeleSatış) --- */
-.q-compare-toggle{display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:6px 10px;box-shadow:0 6px 18px rgba(15,23,42,.06)}
-.q-compare-toggle input{accent-color:var(--secondary)}
-
-.q-compare-panel{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:14px;margin:12px 0 18px 0}
-@media (max-width: 860px){.q-compare-panel{grid-template-columns:1fr}}
-
-.q-compare-card{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;padding:14px 14px 12px 14px;box-shadow:0 10px 30px rgba(15,23,42,.06);display:flex;flex-direction:column;gap:10px}
-.q-compare-title{display:flex;align-items:center;gap:10px;font-weight:800;color:#0e1b42}
-.q-compare-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.q-cmp-val{font-weight:900;font-size:1.15rem;color:#111827}
-.q-cmp-lbl{font-size:.75rem;color:#6b7280}
-
-.q-cmp-ring{width:92px;height:92px;border-radius:999px;background:conic-gradient(#2e7d32 0%, #eee 0%);display:flex;align-items:center;justify-content:center;margin-left:auto}
-.q-cmp-ring-inner{width:66px;height:66px;border-radius:999px;background:#0e1b42;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
