@@ -1243,3 +1243,19 @@ body.editing .edit-icon { display: block !important; }
 
 /* Hide TeleSatış segment filter row (in case html remains) */
 #t-segment-filter{ display:none !important; }
+
+/* --- Kalite Dashboard: Admin Karşılaştırma (Chat vs TeleSatış) --- */
+.q-compare-toggle{display:flex;align-items:center;gap:6px;font-size:.85rem;color:#444;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:6px 10px;box-shadow:0 6px 18px rgba(15,23,42,.06)}
+.q-compare-toggle input{accent-color:var(--secondary)}
+
+.q-compare-panel{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:14px;margin:12px 0 18px 0}
+@media (max-width: 860px){.q-compare-panel{grid-template-columns:1fr}}
+
+.q-compare-card{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;padding:14px 14px 12px 14px;box-shadow:0 10px 30px rgba(15,23,42,.06);display:flex;flex-direction:column;gap:10px}
+.q-compare-title{display:flex;align-items:center;gap:10px;font-weight:800;color:#0e1b42}
+.q-compare-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.q-cmp-val{font-weight:900;font-size:1.15rem;color:#111827}
+.q-cmp-lbl{font-size:.75rem;color:#6b7280}
+
+.q-cmp-ring{width:92px;height:92px;border-radius:999px;background:conic-gradient(#2e7d32 0%, #eee 0%);display:flex;align-items:center;justify-content:center;margin-left:auto}
+.q-cmp-ring-inner{width:66px;height:66px;border-radius:999px;background:#0e1b42;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
