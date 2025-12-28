@@ -13,7 +13,7 @@ function showGlobalError(message){
 }
 
 // Apps Script URL'si
-let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycby3kd04k2u9XdVDD1-vdbQQAsHNW6WLIn8bNYxTlVCL3U1a0WqZo6oPp9zfBWIpwJEinQ/exec"; // Apps Script Web App URL
+let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycbx9LV5bCnRRu4sBx9z6mZqUiDCqRI3yJeh4td4ba1n8Zx4ebSRQ2FvtwSVEg4zsbVeZ/exec"; // Apps Script Web App URL
 
 // ---- API CALL helper (Menu/Yetki vs için gerekli) ----
 async function apiCall(action, payload = {}) {
@@ -818,9 +818,15 @@ function loadTechWizardData() {
 }
 // --- RENDER & FILTERING ---
 function renderCards(data) {
-    activeCards = data;
-    const container = document.getElementById('cardGrid');
-    container.innerHTML = '';
+    try {
+        activeCards = data;
+        const container = document.getElementById('cardGrid');
+        if (!container) {
+            if (typeof console !== 'undefined') console.error('cardGrid bulunamadı');
+            return;
+        }
+        container.innerHTML = '';
+
     
     if (data.length === 0) { container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#777;">Kayıt bulunamadı.</div>'; return; }
     data.forEach((item, index) => {
@@ -846,7 +852,16 @@ function renderCards(data) {
             </div>
         </div>`;
     });
-}
+
+    } catch (e) {
+        try {
+            if (typeof showGlobalError === 'function') {
+                showGlobalError('Kartlar yüklenemedi: ' + (e && e.message ? e.message : String(e)));
+            }
+        } catch (_) {}
+        if (typeof console !== 'undefined') console.error('[renderCards]', e);
+    }
+}}
 function highlightText(htmlContent) {
     if (!htmlContent) return "";
     const searchTerm = document.getElementById('searchInput').value.toLocaleLowerCase('tr-TR').trim();
@@ -1486,6 +1501,65 @@ function escapeHtml(str) {
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
 }
+
+// ------------------------------------------------------------
+// Sağlamlaştırma (hata yönetimi + localStorage güvenli yazma)
+// ------------------------------------------------------------
+const DEBUG = (() => {
+    try { return localStorage.getItem('DEBUG') === '1'; } catch (e) { return false; }
+})();
+
+function dlog(...args) {
+    try { if (DEBUG) console.log(...args); } catch (e) {}
+}
+
+function safeLocalStorageSet(key, value, maxBytes = 4 * 1024 * 1024) { // ~4MB
+    try {
+        const str = JSON.stringify(value);
+        // Basit boyut kontrolü (UTF-16 yaklaşığı)
+        if (str.length * 2 > maxBytes) {
+            try { Swal.fire('Uyarı', 'Veri çok büyük, kaydedilemedi', 'warning'); } catch (e) {}
+            return false;
+        }
+        localStorage.setItem(key, str);
+        return true;
+    } catch (e) {
+        if (e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+            try { Swal.fire('Hata', 'Depolama alanı dolu', 'error'); } catch (x) {}
+        } else {
+            dlog('[safeLocalStorageSet]', e);
+        }
+        return false;
+    }
+}
+
+function safeLocalStorageGet(key, fallback = null) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw == null) return fallback;
+        return JSON.parse(raw);
+    } catch (e) {
+        return fallback;
+    }
+}
+
+const storage = {
+    set: (k, v) => safeLocalStorageSet(k, v),
+    get: (k, fb = null) => safeLocalStorageGet(k, fb),
+    del: (k) => { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+// Global error handlers (kullanıcıya sade mesaj, admin'e detay log)
+window.addEventListener('error', function (e) {
+    try { if (isAdminMode || isLocAdmin) dlog('[Global Error]', e && (e.error || e.message) ? (e.error || e.message) : e); } catch (_) {}
+    try { if (typeof showGlobalError === 'function') showGlobalError('Beklenmeyen hata: ' + (e && e.message ? e.message : 'Bilinmeyen')); } catch (_) {}
+});
+
+window.addEventListener('unhandledrejection', function (e) {
+    try { if (isAdminMode || isLocAdmin) dlog('[Unhandled Promise]', e && e.reason ? e.reason : e); } catch (_) {}
+    try { if (typeof showGlobalError === 'function') showGlobalError('Beklenmeyen hata: ' + (e && e.reason && e.reason.message ? e.reason.message : 'Bilinmeyen')); } catch (_) {}
+});
+
 
 function openGuide() {
     document.getElementById('guide-modal').style.display = 'flex';
@@ -4561,7 +4635,8 @@ function getTechOverride(){
 }
 
 function saveTechOverride(arr){
-    localStorage.setItem('techCardsOverride', JSON.stringify(arr||[]));
+    // localStorage limit / quota hatalarında uygulama çökmesin
+    storage.set('techCardsOverride', (arr || []));
 }
 
 function addTechCard(bucketKey){
