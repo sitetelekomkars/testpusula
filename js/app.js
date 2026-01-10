@@ -1,4 +1,33 @@
 
+
+function formatWeekLabel(raw){
+    try{
+        if(!raw) return '';
+        const s = String(raw);
+        const parts = s.split('-');
+        if(parts.length >= 2){
+            const startStr = parts[0].trim();
+            const endStr   = parts[1].trim();
+            const d1 = new Date(startStr);
+            const d2 = new Date(endStr);
+            if(!isNaN(d1) && !isNaN(d2)){
+                const sameMonth = d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+                if(sameMonth){
+                    const day1 = d1.toLocaleDateString('tr-TR',{day:'2-digit'});
+                    const day2 = d2.toLocaleDateString('tr-TR',{day:'2-digit'});
+                    const monthYear = d1.toLocaleDateString('tr-TR',{month:'long', year:'numeric'});
+                    return `${day1} - ${day2} ${monthYear}`;
+                }else{
+                    const full1 = d1.toLocaleDateString('tr-TR',{day:'2-digit', month:'long', year:'numeric'});
+                    const full2 = d2.toLocaleDateString('tr-TR',{day:'2-digit', month:'long', year:'numeric'});
+                    return `${full1} - ${full2}`;
+                }
+            }
+        }
+    }catch(e){}
+    return raw || '';
+}
+
 function formatShiftDate(d){
     try{
         const dt=new Date(d);
@@ -4958,7 +4987,7 @@ async function loadShiftData(){
 function renderShiftData(shifts){
     const weekLabelEl = document.getElementById('shift-week-label');
     if(weekLabelEl){
-        weekLabelEl.textContent = shifts.weekLabel || '';
+        weekLabelEl.textContent = formatWeekLabel(shifts.weekLabel || '');
     }
 
     const myPlanEl = document.getElementById('shift-plan-my');
