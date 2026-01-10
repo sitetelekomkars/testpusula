@@ -15,133 +15,6 @@ function showGlobalError(message){
 // Apps Script URL'si
 let SCRIPT_URL = localStorage.getItem("PUSULA_SCRIPT_URL") || "https://script.google.com/macros/s/AKfycbx9LV5bCnRRu4sBx9z6mZqUiDCqRI3yJeh4td4ba1n8Zx4ebSRQ2FvtwSVEg4zsbVeZ/exec"; // Apps Script Web App URL
 
-
-// --- P0 Patch: helpers ---
-function hashPassword_(plain) {
-  try { return CryptoJS.SHA256(String(plain)).toString(); } catch(e) { return String(plain); }
-}
-
-function initDelegatedEvents() {
-  const ALLOWED = new Set([
-    "girisYap","logout","toggleUserDropdown","changePasswordPopup","addNewCardPopup","toggleEditMode",
-    "openMenuPermissions","editHomeBlock","openTechArea","openBroadcastFlow","openGuide","openWizard",
-    "openTelesalesArea","openGameHub","openQualityArea","openNews","closeFullTelesales","closeFullTech",
-    "closeFullQuality","addManualFeedbackPopup","assignTrainingPopup","openForgotPassword","closeModal",
-    "filterCategory","exportTelesales","clearChat","sendChat","openAnnouncements","openTodayMatches"
-  ]);
-
-  document.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-action]");
-    if (!el) return;
-    const action = el.dataset.action;
-    if (!ALLOWED.has(action)) return;
-
-    // prevent default for anchors
-    if (el.tagName === "A") e.preventDefault();
-
-    const arg = el.dataset.arg;
-    const args = el.dataset.args ? JSON.parse(el.dataset.args) : null;
-
-    const fn = window[action];
-    if (typeof fn !== "function") return;
-
-    try {
-      if (args) return fn(...args);
-      if (typeof arg !== "undefined") return fn(arg);
-      return fn();
-    } catch(err) {
-      console.error(err);
-      try { Swal.fire("Hata", "İşlem sırasında hata oluştu.", "error"); } catch(_e){}
-    }
-  });
-
-  // keyup delegation (enterBas/filterContent) - keep backward compatible
-  document.addEventListener("keyup", (e) => {
-    const el = e.target;
-    const fnName = el && el.dataset ? el.dataset.onkeyup : null;
-    if (!fnName) return;
-    const fn = window[fnName];
-    if (typeof fn === "function") fn(e);
-  });
-}
-
-async function openForgotPassword() {
-  const { value: formValues } = await Swal.fire({
-    title: "Şifremi Unuttum",
-    html: `
-      <input id="fp_user" class="swal2-input" placeholder="Kullanıcı adı">
-      <textarea id="fp_note" class="swal2-textarea" placeholder="Not (opsiyonel)"></textarea>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: "Gönder",
-    cancelButtonText: "Vazgeç",
-    preConfirm: () => {
-      const u = document.getElementById("fp_user").value.trim();
-      const n = document.getElementById("fp_note").value.trim();
-      if (!u) {
-        Swal.showValidationMessage("Kullanıcı adı zorunlu.");
-        return false;
-      }
-      return { username: u, note: n };
-    }
-  });
-
-  if (!formValues) return;
-
-  const baseUrl = window.location.origin + window.location.pathname;
-  const res = await apiCall("requestPasswordReset", { ...formValues, baseUrl });
-  if (res && res.result === "success") {
-    Swal.fire("Tamam", "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.", "success");
-  } else {
-    Swal.fire("Uyarı", (res && res.message) ? res.message : "Talep oluşturulamadı.", "warning");
-  }
-}
-
-async function handlePasswordResetFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("reset");
-  if (!token) return;
-
-  const { value: pw } = await Swal.fire({
-    title: "Yeni Şifre Belirle",
-    html: `
-      <input id="rp1" type="password" class="swal2-input" placeholder="Yeni şifre">
-      <input id="rp2" type="password" class="swal2-input" placeholder="Yeni şifre (tekrar)">
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Kaydet",
-    cancelButtonText: "Vazgeç",
-    focusConfirm: false,
-    preConfirm: () => {
-      const p1 = document.getElementById("rp1").value;
-      const p2 = document.getElementById("rp2").value;
-      if (!p1 || p1.length < 6) {
-        Swal.showValidationMessage("Şifre en az 6 karakter olmalı.");
-        return false;
-      }
-      if (p1 !== p2) {
-        Swal.showValidationMessage("Şifreler uyuşmuyor.");
-        return false;
-      }
-      return p1;
-    }
-  });
-
-  if (!pw) return;
-
-  const newHash = hashPassword_(pw);
-  const res = await apiCall("resetPasswordWithToken", { resetToken: token, newPassword: newHash });
-  if (res && res.result === "success") {
-    Swal.fire("Başarılı", "Şifreniz güncellendi. Giriş yapabilirsiniz.", "success");
-    // clean url
-    const clean = window.location.origin + window.location.pathname;
-    window.history.replaceState({}, "", clean);
-  } else {
-    Swal.fire("Hata", (res && res.message) ? res.message : "Şifre sıfırlanamadı.", "error");
-  }
-}
-
 // ---- API CALL helper (Menu/Yetki vs için gerekli) ----
 async function apiCall(action, payload = {}) {
   const username = (typeof currentUser !== "undefined" && currentUser) ? currentUser : (localStorage.getItem("sSportUser") || "");
@@ -614,11 +487,7 @@ function copyText(t) {
 }
 document.addEventListener('contextmenu', event => event.preventDefault());
 document.onkeydown = function(e) { if(e.keyCode == 123) return false; }
-document.addEventListener('DOMContentLoaded', () => {
-  initDelegatedEvents();
-  handlePasswordResetFromUrl();
-  checkSession();
-});
+document.addEventListener('DOMContentLoaded', () => { checkSession(); });
 // --- SESSION & LOGIN ---
 function checkSession() {
     const savedUser = localStorage.getItem("sSportUser");
@@ -1401,95 +1270,28 @@ async function editNews(index) {
 // --- STANDARD MODALS (TICKER, NEWS, GUIDE, SALES) ---
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function startTicker() {
-
-  const t = document.getElementById('ticker-content');
-  if (!t) return;
-
-  const activeNews = (Array.isArray(newsData) ? newsData : []).filter(i => i && i.status !== 'Pasif');
-  t.replaceChildren();
-
-  if (activeNews.length === 0) {
-    t.textContent = "Güncel duyuru yok.";
-    t.style.animation = 'none';
-    return;
-  }
-
-  const frag = document.createDocumentFragment();
-  activeNews.forEach((i, idx) => {
-    const wrap = document.createElement('span');
-
-    const date = document.createElement('span');
-    date.className = 'ticker-date';
-    date.textContent = `[${i.date || ''}] `;
-
-    const title = document.createElement('span');
-    title.className = 'ticker-title';
-    title.textContent = `${i.title || ''}: `;
-
-    const desc = document.createElement('span');
-    desc.className = 'ticker-desc';
-    desc.textContent = i.desc || '';
-
-    wrap.append(date, title, desc);
-    frag.appendChild(wrap);
-
-    if (idx !== activeNews.length - 1) {
-      frag.appendChild(document.createTextNode('   •   '));
-    }
-  });
-
-  // loop effect
-  t.appendChild(frag.cloneNode(true));
-  t.appendChild(document.createTextNode('   •   '));
-  t.appendChild(frag);
-
-  const totalChars = t.textContent.length || 1;
-  const duration = Math.min(220, Math.max(60, Math.round(totalChars / 8)));
-  t.style.animation = `ticker-scroll ${duration}s linear infinite`;
-
+    const t = document.getElementById('ticker-content');
+    const activeNews = newsData.filter(i => i.status !== 'Pasif');
+    if(activeNews.length === 0) { t.innerHTML = "Güncel duyuru yok."; t.style.animation = 'none'; return; }
+    
+    let tickerText = activeNews.map(i => {
+        return `<span style="color:#fabb00; font-weight:bold;">[${i.date}]</span> <span style="color:#fff;">${i.title}:</span> <span style="color:#ddd;">${i.desc}</span>`;
+    }).join(' &nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp; ');
+    t.innerHTML = tickerText + ' &nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp; ' + tickerText;
+    t.style.animation = 'ticker-scroll 190s linear infinite';
 }
 function openNews() {
-
-  document.getElementById('news-modal').style.display = 'flex';
-  const container = document.getElementById('news-container');
-  if (!container) return;
-
-  container.replaceChildren();
-  const active = (Array.isArray(newsData) ? newsData : []).filter(i => i && i.status !== 'Pasif');
-  if (!active.length) {
-    const p = document.createElement('p');
-    p.textContent = 'Güncel duyuru yok.';
-    container.appendChild(p);
-    return;
-  }
-
-  active.forEach((n) => {
-    const card = document.createElement('div');
-    card.className = 'news-card';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = n.title || 'Duyuru';
-
-    const desc = document.createElement('div');
-    desc.textContent = n.desc || '';
-
-    const meta = document.createElement('div');
-    meta.className = 'news-meta';
-
-    const tag = document.createElement('span');
-    tag.className = 'news-tag';
-    tag.textContent = n.status || '';
-
-    const date = document.createElement('span');
-    date.className = 'news-tag';
-    date.style.background = '#555';
-    date.textContent = n.date || '';
-
-    meta.append(tag, date);
-    card.append(h3, desc, meta);
-    container.appendChild(card);
-  });
-
+    document.getElementById('news-modal').style.display = 'flex';
+    const c = document.getElementById('news-container');
+    c.innerHTML = '';
+    newsData.forEach((i, index) => {
+        let cl = i.type === 'fix' ? 'tag-fix' : (i.type === 'update' ? 'tag-update' : 'tag-info');
+        let tx = i.type === 'fix' ? 'Çözüldü' : (i.type === 'update' ? 'Değişiklik' : 'Bilgi');
+        let passiveStyle = i.status === 'Pasif' ? 'opacity:0.5; background:#eee;' : '';
+        let passiveBadge = i.status === 'Pasif' ? '<span class="news-tag" style="background:#555; color:white;">PASİF</span>' : '';
+        let editBtn = (isAdminMode && isEditingActive) ? `<i class="fas fa-pencil-alt edit-icon" style="top:0; right:0; font-size:0.9rem; padding:4px;" onclick="event.stopPropagation(); editNews(${index})"></i>` : '';
+        c.innerHTML += `<div class="news-item" style="${passiveStyle}">${editBtn}<span class="news-date">${i.date}</span><span class="news-title">${i.title} ${passiveBadge}</span><div class="news-desc">${i.desc}</div><span class="news-tag ${cl}">${tx}</span></div>`;
+    });
 }
 
 
@@ -3213,10 +3015,13 @@ function renderDashboardTrendChart(data){
     if(!canvas) return;
     destroyIfExists(dashTrendChart);
 
-    // Günlük ortalama (dd.MM.yyyy)
+    // Günlük ortalama (dd.MM.yyyy) - tarih kaynağı: öncelik çağrı tarihi, yoksa dinlenme tarihi
     const byDay = {};
     (data||[]).forEach(e=>{
-        const day = String(e.date||'').trim();
+        // e.callDate: Çağrı tarihi (dd.MM.yyyy), e.date: dinlenme tarihi
+        const callDay = String(e.callDate || '').trim();
+        const listenDay = String(e.date || '').trim();
+        const day = callDay || listenDay; // Önce çağrı tarihi, yoksa eski kayıtlar için dinlenme tarihi
         if(!day) return;
         const s = parseFloat(e.score)||0;
         if(!byDay[day]) byDay[day] = { total:0, count:0 };
@@ -4068,7 +3873,7 @@ async function fetchEvaluationsForAgent(forcedName, silent=false) {
                                 <span><i class="fas fa-phone"></i> Çağrı: ${callDateDisplay}</span>
                                 <span><i class="fas fa-headphones"></i> Dinlenme: ${listenDateDisplay}</span>
                             </div>
-                            <div style="font-size:0.75rem; color:#999; margin-top:2px;">ID: ${evalItem.callId}</div>
+                            <div style="font-size:0.75rem; color:#999; margin-top:2px;">ID: <span class="eval-id-copy" data-eval-id="${escapeHtml(evalItem.callId || '')}">${escapeHtml(evalItem.callId || '')}</span></div>
                         </div>
                         <div style="text-align:right;">
                              ${editBtn} <span style="font-weight:800; font-size:1.6rem; color:${scoreColor};">${evalItem.score}</span>
@@ -4085,6 +3890,54 @@ async function fetchEvaluationsForAgent(forcedName, silent=false) {
         }
     } catch(err) { if(!silent) listEl.innerHTML = `<p style="color:red; text-align:center;">Hata oluştu.</p>`; }
 }
+
+// Değerlendirme listesindeki ID alanına çift tıklayınca ID'yi panoya kopyala
+(function setupEvaluationIdCopy(){
+    const root = document.getElementById('evaluations-list');
+    if (!root) return;
+    if (root.__evalIdCopyBound) return;
+    root.__evalIdCopyBound = true;
+
+    root.addEventListener('dblclick', function(e){
+        const span = e.target.closest('.eval-id-copy');
+        if (!span) return;
+        const id = span.getAttribute('data-eval-id') || span.textContent.replace(/^ID\s*:/i, '').trim();
+        if (!id) return;
+
+        const doToast = (msg, icon='success') => {
+            try{
+                if (typeof Swal !== 'undefined' && Swal.fire){
+                    Swal.fire({
+                        toast:true,
+                        position:'top-end',
+                        icon,
+                        title: msg,
+                        showConfirmButton:false,
+                        timer:1200
+                    });
+                }
+            }catch(_){}
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(id).then(()=>{
+                doToast('ID kopyalandı');
+            }).catch(()=>{
+                doToast('ID kopyalanamadı', 'error');
+            });
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = id;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); doToast('ID kopyalandı'); }
+            catch(_){ doToast('ID kopyalanamadı', 'error'); }
+            document.body.removeChild(ta);
+        }
+    });
+})();
 function updateAgentListBasedOnGroup() {
     const groupSelect = document.getElementById('q-admin-group');
     const agentSelect = document.getElementById('q-admin-agent');
@@ -4503,6 +4356,57 @@ const todayISO = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-$
 
 
 // Ana Sayfa - Günün Sözü düzenleme (sadece admin mod + düzenleme açıkken)
+
+
+function openShiftRequestPopup(){
+    const now = new Date();
+    // Haftanın Perşembesi 20:00 kontrolü: talepler bir önceki haftanın Perşembe 20:00'ine kadar
+    // Burada sadece bilgilendirme yapıyoruz, asıl kural Google Sheet tarafında da kontrol edilebilir.
+    Swal.fire({
+        title: 'Vardiya Talebi',
+        html: `
+          <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+            <div style="font-size:0.8rem; color:#6b7280;">
+              Vardiya talepleri bir önceki haftanın <b>Perşembe</b> günü saat <b>20:00</b>'ye kadar iletilmelidir.
+            </div>
+            <input id="swal-shift-date" type="date" class="swal2-input" placeholder="Tarih">
+            <input id="swal-shift-type" class="swal2-input" placeholder="Talep Türü (örn: izin, vardiya değişimi)">
+            <textarea id="swal-shift-note" class="swal2-textarea" placeholder="Talebini detaylı yaz" style="height:120px;"></textarea>
+          </div>
+        `,
+        confirmButtonText: 'Talebi Gönder',
+        cancelButtonText: 'Vazgeç',
+        showCancelButton: true,
+        focusConfirm: false,
+        preConfirm: () => {
+            const date = (document.getElementById('swal-shift-date')||{}).value || '';
+            const type = (document.getElementById('swal-shift-type')||{}).value || '';
+            const note = (document.getElementById('swal-shift-note')||{}).value || '';
+            if(!date || !type){
+                Swal.showValidationMessage('Tarih ve talep türü zorunludur.');
+                return false;
+            }
+            return { date, type, note };
+        }
+    }).then(res => {
+        if(!res.isConfirmed || !res.value) return;
+        const payload = res.value;
+        apiCall('submitShiftRequest', {
+            date: payload.date,
+            type: payload.type,
+            note: payload.note || '',
+            username: currentUser
+        }).then(r => {
+            if(r && r.result === 'success'){
+                Swal.fire('Gönderildi', 'Vardiya talebin kaydedildi.', 'success');
+            }else{
+                Swal.fire('Hata', (r && r.message) || 'Talep kaydedilemedi.', 'error');
+            }
+        }).catch(()=>{
+            Swal.fire('Hata', 'Talep kaydedilemedi.', 'error');
+        });
+    });
+}
 function editHomeBlock(kind){
     if(!isAdminMode){
         Swal.fire("Yetkisiz", "Bu işlem için admin yetkisi gerekli.", "warning");
